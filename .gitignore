@@ -1,0 +1,23 @@
+# Securty and Secrets
+.env
+secret.toml
+
+# Python cache & virtualenvs
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+.venv/
+
+# Environment / OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Test scripts / Junk
+dummy_receipt.jpg
+test_api.py
+test_gemini.py
