@@ -161,4 +161,101 @@ with left_col:
     # If user uploads image, present buttons to explicitly trigger API
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
-        st.image(image, caption="U
+        st.image(image, caption="Uploaded Transaction Screenshot", use_container_width=True)
+        
+        col_analyze, col_clear = st.columns(2)
+        with col_analyze:
+            if st.button("✨ Analyze with Gemini API", use_container_width=True):
+                with st.spinner("Analyzing image and extracting merchant data securely..."):
+                    extraction = parse_transaction_image(image)
+                    
+                if "error" in extraction:
+                    st.error(f"Analysis Failed: {extraction['error']}")
+                else:
+                    st.success("✅ Extraction Complete! The manual form has been populated.")
+                    st.session_state.extracted_vendor = extraction.get("vendor", "Unknown")
+                    st.session_state.extracted_amount = float(extraction.get("amount", 0.0))
+                    st.session_state.extracted_category = extraction.get("category", "Shopping (In-Store General)")
+                    st.session_state.image_analyzed = True
+
+        with col_clear:
+            if st.button("🗑️ Clear Image & Results", use_container_width=True):
+                st.session_state.image_analyzed = False
+                st.session_state.show_results = False
+                st.session_state.extracted_amount = 0.0
+                st.session_state.extracted_category = "Shopping (In-Store General)"
+                st.session_state.extracted_vendor = "Unknown (Manual Input)"
+                st.session_state.uploader_key += 1
+                st.rerun()
+
+    # Display successful extraction stats
+    if st.session_state.image_analyzed:
+        st.markdown("##### Extracted Data")
+        col_v, col_a = st.columns(2)
+        col_v.metric("Vendor", st.session_state.extracted_vendor)
+        col_a.metric("Amount", f"HK$ {st.session_state.extracted_amount:.2f}")
+        st.metric("Mapped Category", st.session_state.extracted_category)
+
+
+with right_col:
+    # --- Manual Override Form ---
+    st.subheader("2. Final Transaction Details")
+    with st.form(key="transaction_form"):
+        cat_search = st.session_state.extracted_category
+        cat_idx = CATEGORIES.index(cat_search) if cat_search in CATEGORIES else 0
+        form_category = st.selectbox("Spending Category (Can override AI)", CATEGORIES, index=cat_idx)
+
+        default_amt = st.session_state.extracted_amount if st.session_state.extracted_amount > 0 else 100.0
+        form_amount = st.number_input("Amount (HK$)", min_value=0.0, value=default_amt, step=10.0, format="%.2f")
+
+        submit_calculation = st.form_submit_button("💳 Calculate Best Card", use_container_width=True)
+        
+        if submit_calculation:
+            st.session_state.final_category = form_category
+            st.session_state.final_amount = form_amount
+            st.session_state.show_results = True
+
+    # --- Execution & Results ---
+    if st.session_state.show_results and st.session_state.final_amount > 0:
+        st.markdown("---")
+        results = get_recommendations(
+            st.session_state.final_category, 
+            st.session_state.final_amount
+        )
+        
+        st.subheader("Card Recommendations")
+        
+        # Render Best Card
+        best = results[0]
+        best_html = f"""
+        <div class="best-card">
+            <div class="card-title">
+                🏆 {best['card']} 
+                <span class="badge-winner">Best Choice</span>
+            </div>
+            <div class="miles-highlight">+{best['miles']} Miles</div>
+            <div class="rate-text">Effective Rate: HK${best['rate']} = 1 Mile</div>
+            <div class="notes-text">💡 {best['notes']}</div>
+        </div>
+        """
+        st.markdown(best_html, unsafe_allow_html=True)
+        
+        # Render alternative cards
+        if len(results) > 1:
+            st.markdown("#### Alternative Cards")
+            for res in results[1:]:
+                other_html = f"""
+                <div class="other-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: #e2e8f0; font-size: 1rem;">{res['card']}</div>
+                            <div class="notes-text">{res['notes']}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: #4db8ff; font-weight: 700; font-size: 1.2rem;">+{res['miles']}</div>
+                            <div style="font-size: 0.75rem; color: #64748b;">HK${res['rate']} = 1 Mile</div>
+                        </div>
+                    </div>
+                </div>
+                """
+                st.markdown(other_html, unsafe_allow_html=True)

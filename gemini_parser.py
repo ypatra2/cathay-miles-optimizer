@@ -72,3 +72,78 @@ def parse_transaction_image(image) -> Dict[str, Any]:
     FOOD DELIVERY:
     - Keeta, Foodpanda, Deliveroo → "Food Delivery" (NOT dining — MCC 5814)
 
+    SHOPPING:
+    - GU, Decathlon, lululemon, Sushiro, TamJai SamGor, TamJai Yunnan, The Coffee Academics, NAMCO, TAITO STATION → "Shopping (Designated 8%)"
+    - Amazon, Taobao, HKTVmall, Zalora, ASOS, Shopee, Lazada, AEON online → "Online General"
+    - Uniqlo, M&S, or any in-store retail not listed above → "Shopping (In-Store General)"
+
+    OTHER:
+    - Octopus top-up or AAVS → "Octopus AAVS"
+    - Foreign currency transaction or overseas merchant → "Overseas"
+
+    Return the response as a valid JSON object:
+    {{
+      "vendor": "String",
+      "amount": Float,
+      "category": "String"
+    }}
+    Ensure your output is pure, unformatted JSON with no markdown wrapping.
+    """
+
+    # Convert PIL Image to Base64
+    buffered = BytesIO()
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+    image.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": img_str
+                        }
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.0,
+            "responseMimeType": "application/json"
+        }
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-goog-api-key": api_key
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code != 200:
+            error_msg = response.text
+            if "User location is not supported" in error_msg:
+                return {"error": "Google Gemini API is geo-blocked. Make sure your VPN is routing Terminal/Python traffic!"}
+            if "not found" in error_msg:
+                return {"error": f"Model not found via API. Raw: {error_msg}"}
+            return {"error": f"API Error {response.status_code}: {error_msg}"}
+
+        data = response.json()
+        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        result = json.loads(raw_text)
+
+        # Validation Fallback
+        if result.get("category") not in VALID_CATEGORIES:
+            result["category"] = "Shopping (In-Store General)"
+
+        return result
+    except json.JSONDecodeError:
+        return {"error": "Failed to decode Gemini response into JSON."}
+    except Exception as e:
+        return {"error": str(e)}
