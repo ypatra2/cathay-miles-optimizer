@@ -78,4 +78,42 @@ def parse_transaction_image(image) -> Dict[str, Any]:
                         "inline_data": {
                             "mime_type": "image/jpeg",
                             "data": img_str
-                     
+                        }
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.0,
+            "responseMimeType": "application/json"
+        }
+    }
+    
+    headers = {
+        "Content-Type": "application/json",
+        "X-goog-api-key": api_key
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code != 200:
+            error_msg = response.text
+            if "User location is not supported" in error_msg:
+                return {"error": "Google Gemini API is geo-blocked. Make sure your VPN is routing Terminal/Python traffic!"}
+            if "not found" in error_msg:
+                return {"error": f"Model not found via API. Raw: {error_msg}"}
+            return {"error": f"API Error {response.status_code}: {error_msg}"}
+            
+        data = response.json()
+        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        result = json.loads(raw_text)
+        
+        # Validation Fallback
+        if result.get("category") not in VALID_CATEGORIES:
+            result["category"] = "Shopping (In-Store General)" 
+            
+        return result
+    except json.JSONDecodeError:
+        return {"error": "Failed to decode Gemini response into JSON."}
+    except Exception as e:
+        return {"error": str(e)}
