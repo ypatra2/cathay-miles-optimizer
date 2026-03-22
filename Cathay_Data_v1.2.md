@@ -602,4 +602,331 @@ ELSE → Use SC Cathay (HK$6/mile) or EveryMile (HK$5/mile), about equal
 
 **Monthly Total: ~29,267 miles (~HK$22/mile = ~HK$644 value)**
 
-**Annual Total: ~350,000 miles** (s
+**Annual Total: ~350,000 miles** (sufficient for 2-3 long-haul business class award flights or 4-6 short-haul economy redemptions!)
+
+---
+
+## SECTION 4: CONVERSION MECHANICS & REDEMPTION
+
+### 4.1 How to Convert RewardCash to Asia Miles (HSBC Cards)
+
+**Process:**
+1. Download "HSBC Reward+" mobile app (available on iOS/Android)
+2. Navigate to "Rewards" → "Conversion"
+3. Select "Asia Miles by Cathay Pacific"
+4. Enter conversion amount (1 RewardCash = 20 miles for EveryMile; 1 RC = 10 miles for Red/VISA Signature)
+5. Confirm conversion in HSBC Reward+ app
+6. Miles credited to Asia Miles account within 7-14 working days
+7. Verify: Check both HSBC statement AND Cathay Asia Miles account
+
+**Conversion Rates (Via HSBC Reward+):**
+- HSBC EveryMile VISA: 1 RewardCash = 20 Asia Miles (Special Premium Rate - BEST)
+- HSBC Red Mastercard: 1 RewardCash = 10 Asia Miles (Standard Rate)
+- HSBC VISA Signature: 1 RewardCash = 10 Asia Miles (Standard Rate)
+- Alternative: 1 RewardCash = HK$1 cash voucher (but this defeats the miles goal)
+- Special Promotions: Monitor Cathay conversion campaigns for occasional 10% bonus miles conversions (e.g., Q1 2026)
+
+**Example Conversion (EveryMile):**
+- Earned: HK$500 RewardCash over 2 months
+- Miles conversion: HK$500 × 20 = 10,000 Asia Miles
+- Time to credit: 7-14 working days
+- Alternative redemption: HK$500 cash voucher (but miles are more valuable)
+
+---
+
+### 4.2 Standard Chartered Cathay Direct Conversion (Automatic)
+
+**Process:**
+- Automatic monthly conversion (NO manual steps required)
+- Miles credited automatically to linked Asia Miles account
+- Verification: Check SC statement and Asia Miles account (usually visible 5-7 business days after billing cycle close)
+- No fees or conversions rates to negotiate
+
+---
+
+### 4.3 Asia Miles Redemption Value (Current Award Charts - March 2026)
+
+**Cathay Pacific Award Charts (Economy):**
+- Domestic/Short-haul (Hong Kong → Bangkok, Macau): 12,500-15,000 miles
+- Regional (Hong Kong → Tokyo, Sydney, Singapore): 20,000-25,000 miles
+- Long-haul (Hong Kong → London, New York, Frankfurt): 40,000-80,000 miles
+- Ultra-long-haul: Can extend beyond 80,000 miles
+
+**Cathay Pacific Award Charts (Business Class):**
+- Regional (Hong Kong → Tokyo): 50,000-70,000 miles
+- Long-haul (Hong Kong → London): 100,000-120,000 miles
+- Ultra-long-haul: Can exceed 120,000 miles
+
+**Effective Value Per Mile (Redemption):**
+- Economy short-haul: HK$0.015-0.020 per mile
+- Economy regional: HK$0.018-0.025 per mile
+- Economy long-haul: HK$0.020-0.030 per mile
+- **Average assumed: HK$0.022 per mile** (commonly used baseline)
+
+**10% SC Cathay Card Discount Value:**
+- 10% off redemption = effective 11.1% more miles value
+- Example: 40,000 miles → redeems as 44,000 miles equivalent value (with 10% discount applied)
+
+---
+
+## SECTION 5: ANNUAL OPTIMIZATION ROADMAP
+
+### 5.1 January-March 2026 Strategy (Q1)
+
+**Focus Area:** Welcome offers + quarterly spending bonuses + overseas promo tier 1
+
+**Actions:**
+1. Apply for any new cards (if eligible) to capture welcome bonuses
+2. Maximize SC Cathay spending to trigger HK$8,000 first quarterly bonus
+3. Set up Octopus AAVS with SC Cathay (ongoing automatic earning)
+4. Register HSBC Red for Red Hot Rewards category selection (if applicable)
+5. Accumulate overseas spending toward HK$12,000 EveryMile tier on new 2026 promo
+6. Track: Remain under HK$10,000/month online cap on Red to maximize 4% rate
+
+**Target:** 25,000-30,000 miles
+
+---
+
+### 5.2 April-June 2026 Strategy (Q2)
+
+**Focus Area:** Sustaining spending bonuses + overseas travel season + tier transitions
+
+**Actions:**
+1. Trigger HK$8,000 second quarterly bonus with SC Cathay (if Q1 target met)
+2. Complete HK$12,000 overseas spending on EveryMile for promo tier unlock
+3. Plan summer travel with Cathay bookings (tap into improved earning rates)
+4. Convert accumulated RewardCash to miles on HSBC Reward+ app
+5. Redeem first batch of accumulated miles for Q3 travel
+6. Monitor EveryMile overseas promo end date (June 30, 2026) before spending resets
+
+**Target:** 25,000-30,000 miles
+
+---
+
+### 5.3 July-September 2026 Strategy (Q3)
+
+**Focus Area:** Travel season + third quarter bonus + new promo setup
+
+**Actions:**
+1. Trigger HK$8,000 third quarterly bonus with SC Cathay
+2. Maximize dining during summer (use VISA Signature for premium restaurants)
+3. Strategic timing of flight bookings to maximize Cathay earning
+4. Consider splitting spending between cards to hit bonus thresholds
+5. Verify new overseas promo terms for July-December period (if applicable)
+6. Convert RewardCash mid-quarter to allow miles to post before redemption
+
+**Target:** 28,000-35,000 miles
+
+---
+
+### 5.4 October-December 2026 Strategy (Q4)
+
+**Focus Area:** Year-end travel + annual planning + fourth quarter bonus
+
+**Actions:**
+1. Trigger HK$8,000 fourth quarterly bonus with SC Cathay
+2. Plan holiday travel bookings (Nov-Dec) for miles earning
+3. Year-end shopping surge (use HSBC Red 8% tier if capacity available)
+4. Convert all remaining RewardCash before year-end cutoff
+5. Review annual earning; plan 2027 card strategy based on learnings
+6. Confirm all miles posted correctly to Asia Miles account
+
+**Target:** 30,000-35,000 miles
+
+---
+
+## SECTION 6: COMMON MISTAKES TO AVOID
+
+### ❌ Mistake 1: Using Cathay Card for Non-Cathay/HK Express Bookings (OTA)
+- **Why Wrong:** You get HK$6 = 1 mile for OTA (vs HK$2 = 1 on Cathay direct, or HK$2.5 = 1 on Red online 4%)
+- **Correct Approach:** Use HSBC Red 4% online for OTA (MCC 4722 captured), or EveryMile if designated merchant/promo applies
+- **Savings:** Up to 3x better rate (HK$2.5/mile via Red vs HK$6/mile on SC Cathay)
+
+### ❌ Mistake 2: Ordering Foodpanda/Keeta and Using Cathay Card Expecting Dining Miles
+- **Why Wrong:** These are platform/e-commerce (MCC 5814 Fast Food), NOT dining category (MCC 5812 Restaurants)
+- **Correct Approach:** Use HSBC Red for 4% online rebate, NOT SC Cathay for HK$6=1 general category
+- **Savings:** 0.4 miles per HK$1 (Red) vs 0.167 miles per HK$1 (SC Cathay = 2.4x worse)
+
+### ❌ Mistake 3: Not Tracking Quarterly Bonus Thresholds (SC Cathay HK$8,000)
+- **Why Wrong:** Easy 2,667 bonus miles per quarter (~10,668/year free miles!) go unclaimed
+- **Correct Approach:** Accumulate SC Cathay spending each quarter to HK$8,000 minimum to trigger bonus
+- **Tracking:** Use notes/reminders to track quarterly spend across calendar quarters (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec)
+- **Savings:** ~10,000 free miles annually by hitting quarterly targets
+
+### ❌ Mistake 4: Shopping at Non-Designated Merchants with Red Card Above HK$1,250/Month
+- **Why Wrong:** 0.4% rebate vs potential 8% at designated merchants (20x worse rate)
+- **Correct Approach:** Check HSBC Red merchant list BEFORE shopping; prioritize designated merchants (GU, Decathlon, Sushiro, TamJai, lululemon)
+- **Savings:** 10-20x better rate when using designated merchants
+
+### ❌ Mistake 5: Paying Octopus with Cash Instead of AAVS Setup
+- **Why Wrong:** No miles earned on cash payment = lost 2,000-3,000 miles annually
+- **Correct Approach:** Set up SC Cathay AAVS for automatic HK$6 = 1 mile earning on each reload
+- **Savings:** 2,000-3,000 miles annually from routine AAVS
+
+### ❌ Mistake 6: Not Converting RewardCash During Bonus Campaigns
+- **Why Wrong:** Miss 10% bonus miles (e.g., Cathay's Q1 2026 offer = extra 5,000+ miles per conversion)
+- **Correct Approach:** Monitor Cathay conversion campaigns; convert strategically during bonus periods
+- **Timing:** Check HSBC Reward+ app and Cathay website monthly for campaigns
+- **Savings:** Extra 5,000+ miles per conversion during bonus periods
+
+### ❌ Mistake 7: Dining at Non-Partner Cathay Restaurants with Cathay Card
+- **Why Wrong:** Missing HK$4 = 2 miles bonus at partner restaurants (2x rate)
+- **Correct Approach:** Check dining.cathaypacific.com for updated partner list; plan dining accordingly
+- **Savings:** 2x miles at partner restaurants (vs 1x at regular restaurant)
+
+### ❌ Mistake 8: Confusing EveryMile's Designated Merchants vs General Spend
+- **Why Wrong:** Using EveryMile at non-designated merchants = HK$5/mile instead of HK$2/mile (2.5x worse)
+- **Correct Approach:** Verify if merchant is on designated list before using card
+  - Designated (HK$2/mile): Klook, KKday, Starbucks, MTR, KMB, certain cafés, travel services
+  - General (HK$5/mile): Most other local merchants, OTA like Trip.com/Expedia not on designated list
+- **Savings:** 2.5x better rate on designated merchants
+
+### ❌ Mistake 9: Using Red Card Online Cap Inefficiently
+- **Why Wrong:** Hitting HK$10,000 cap early = remaining online spend at 0.4% instead of 4%
+- **Correct Approach:** Spread online purchases strategically throughout month; track cumulative spend
+- **Tip:** Consider using EveryMile (HK$5/mile = 0.2 miles/HK$) for online spend >HK$10,000/month threshold on Red
+- **Savings:** Avoid 0.4% spillover by optimizing card choice
+
+### ❌ Mistake 10: Not Verifying Overseas Spend Tier Thresholds on EveryMile
+- **Why Wrong:** Miss HK$12,000+ overseas promo tier = earning HK$5/mile instead of HK$2/mile (2.5x worse)
+- **Correct Approach:** Track overseas spending toward HK$12,000 threshold; once met in promo period, all subsequent overseas spend earns HK$2/mile
+- **Timing:** Q1-Q2 2026 confirmed; verify Q3-Q4 2026 terms
+- **Savings:** Unlock 2.5x better rate once threshold met
+
+---
+
+## SECTION 7: QUICK REFERENCE CARD SELECTION MATRIX
+
+| **Spending Category** | **Best Card** | **Rate** | **Annual Earning Potential** | **Notes** |
+|---|---|---|---|---|
+| **Cathay Direct Flights** | SC Cathay | HK$2=1 mi + 2,667 bonus/Q | 60,000+ mi | Direct only; OTA = HK$6/mile |
+| **HK Express Flights** | SC Cathay | HK$2=1 mi | 30,000+ mi | Use "Miles Plus Cash" for 10% rebate |
+| **Non-Cathay Airlines (Klook)** | EveryMile | HK$2=1 mi | 20,000+ mi | Klook on designated list |
+| **OTA Flights (Trip.com/Expedia)** | Red or SC Cathay | 4% online or HK$6/mile | Variable | Red 4% slightly better than SC Cathay HK$6/mile |
+| **Premium Dining** | VISA Signature | 3.6% = HK$2.78/mi | 15,000+ mi | B1G1 at Michelin restaurants |
+| **Casual Dining** | SC Cathay | HK$4=1 mi | 20,000+ mi | Check for partner restaurants (2x rate) |
+| **Keeta Delivery** | Red Mastercard | 4% online | 12,000+ mi | NOT dining; treat as e-commerce |
+| **Foodpanda Delivery** | Red Mastercard | 4% online (5% Wed-Sat promo) | 15,000+ mi | NOT dining; treat as e-commerce |
+| **Shopping (Designated)** | Red Mastercard | 8% (first HK$1.25K) | 20,000+ mi | GU, Decathlon, lululemon, TamJai, Sushiro |
+| **Shopping (General)** | EveryMile | HK$5 = 1 mi | 12,000+ mi | For non-designated retailers |
+| **Shopping (Online)** | Red Mastercard | 4% (first HK$10K) | 20,000+ mi | Amazon, Taobao, HKTVmall, Zalora, AEON |
+| **Octopus AAVS** | SC Cathay | HK$6=1 mi (auto) | 3,000+ mi | Automatic monthly; completely passive |
+| **Overseas Spend (if promo active)** | EveryMile | HK$2 = 1 mi (if HK$12K+) | 25,000+ mi | Only when promo active & threshold met |
+
+---
+
+## SECTION 8: FINAL RECOMMENDATIONS
+
+### Top Priority Actions:
+
+1. **For Every Cathay Flight Purchase (Direct):**
+   - Use: Standard Chartered Cathay Mastercard
+   - Benefit: HK$2 = 1 mile direct (no conversion) + 10% redemption discount + 2,667 bonus per HK$8K quarterly
+   - Frequency: As often as you travel
+
+2. **For Online Shopping:**
+   - Use: HSBC Red Mastercard (first HK$10,000/month @ 4%)
+   - Benefit: 4% rebate = 0.4 miles per HK$1
+   - Frequency: Daily online orders
+
+3. **For Travel Bookings (Non-Cathay):**
+   - Use: HSBC EveryMile VISA (HK$2 = 1 mile on Klook/KKday; HK$5 for others)
+   - Benefit: Flexible conversion (1 RC = 20 miles) + Agoda discounts
+   - Frequency: Quarterly travel planning
+
+4. **For Food Delivery (Keeta/Foodpanda):**
+   - Use: HSBC Red Mastercard (4% online category)
+   - Benefit: Consistent online rebate; treat as e-commerce, NOT dining
+   - Frequency: Weekly orders (strategic day selection for Foodpanda Wednesdays/Saturdays)
+
+5. **For Premium Dining:**
+   - Use: HSBC VISA Signature (3.6% = HK$2.78/mile + B1G1 Michelin)
+   - Benefit: Highest dining rate + exclusive restaurant perks
+   - Frequency: Monthly special dinners
+
+6. **For Octopus:**
+   - Use: SC Cathay Mastercard AAVS (automatic HK$6 = 1 mile)
+   - Benefit: Passive earning with zero effort after initial setup
+   - Frequency: Automatic monthly
+
+### Realistic Annual Miles Potential:
+- **Conservative (HK$20,000/month):** ~90,000-120,000 miles
+- **Balanced (HK$40,000/month):** ~220,000-280,000 miles
+- **Aggressive (HK$60,000/month):** ~320,000-420,000 miles
+
+**At HK$0.022 per mile redemption value:**
+- Conservative: HK$2,000-2,640 annual value
+- Balanced: HK$4,800-6,200 annual value
+- Aggressive: HK$7,000-9,300 annual value
+
+---
+
+## SECTION 9: IMPORTANT CLARIFICATIONS & NUANCES
+
+### OTA vs Direct Booking - Critical MCC Difference
+- **Direct Cathay Booking (cathay.com):** Codes as airline (MCC 3000-3350) = SC Cathay HK$2/mile
+- **OTA Booking (Trip.com, Expedia, Klook, etc.):** Codes as travel agency (MCC 4722) = SC Cathay HK$6/mile = HSBC Red 4% online = EveryMile HK$5/mile
+- **Key Learning:** Always book Cathay direct on cathay.com to get HK$2/mile rate; OTA bookings trigger "other HKD spending" category at HK$6/mile on SC Cathay
+
+### Designated Merchants List Volatility
+- **HSBC Red 8% Tier:** List changes quarterly; Uniqlo/M&S status varies year-to-year
+- **HSBC EveryMile:** Klook, KKday, cafés, transport remain stable; but list can expand/contract
+- **Action Item:** Re-verify merchant lists before relying on HK$2/mile or 8% rates; check official HSBC websites monthly
+
+### Overseas Spend Promo Mechanics (EveryMile)
+- **2026 H1 Confirmed:** HK$12,000+ overseas spend = HK$2/mile rate on ALL overseas spend in that tier
+- **Registration:** Must register on HSBC Reward+ app to track overseas spend toward threshold
+- **Cap:** HK$225 max rebate per period (HK$15,000 spend cap)
+- **Verification:** Check HSBC Reward+ app monthly to confirm tier status
+- **Risk:** If promo ends mid-quarter, new baseline becomes HK$5/mile; stay aware of promo end dates
+
+### Quarterly Bonus Resets (SC Cathay)
+- **Calendar Quarter Reset:** Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec (tied to calendar years, NOT billing cycles)
+- **Threshold:** HK$8,000 accumulated Cathay/HK Express DIRECT spending per quarter
+- **Bonus:** 2,667 miles (automatic; credited same month as Cathay statement)
+- **Stacking:** Multiple thresholds possible (HK$16,000 = 2 bonuses = 5,334 miles)
+- **Exclusions:** Dining, hotels, Octopus AAVS do NOT count toward bonus threshold; only direct Cathay/HK Express flight/holiday/duty-free counts
+
+---
+
+## SECTION 10: CONTACT & VERIFICATION
+
+### Card Services Contacts:
+- **Standard Chartered:** 1800 789 789 (24/7) or online chat; merchant inquiry line available
+- **HSBC:** 2288 8888 (24/7) or Red Hot Offers app; EveryMile merchant list updates via website
+- **Cathay Pacific:** +852 2747 2747 or cathay.com; dining partners at dining.cathaypacific.com
+
+### Key Verification Steps:
+1. **Before major purchase:** Confirm current merchant list for HSBC Red 8% tier on HSBC website
+2. **Quarterly bonus tracking:** Maintain running total of SC Cathay Cathay/HK Express direct spend per calendar quarter
+3. **Overseas spend promo:** Register on HSBC Reward+ app to auto-track overseas spending toward HK$12,000 threshold
+4. **Conversion campaigns:** Monitor Cathay conversion campaigns (10% bonus) on cathay.com or HSBC Reward+ app
+5. **OTA coding verification:** Confirm OTA transaction posted correctly by checking statement notation (should say "Travel Agency" or merchant name of OTA, not airline name)
+
+---
+
+## SECTION 11: DATA QUALITY ASSURANCE
+
+**Sources & Verification:**
+- All merchant names sourced from official HSBC/SC websites and official fact sheets (March 2026)
+- All earning rates verified against issuer terms & conditions (current as of March 2026)
+- OTA/MCC 4722 mechanics verified against multiple milelion.com sources and HSBC Singapore/Revolution card comparisons
+- Quarterly bonus mechanics confirmed via MoneyHero, SC official website, and user reports
+- EveryMile overseas promo terms verified against HSBC HK official redhotoffers portal (Jan-Jun 2026 confirmed; future periods TBD)
+
+**Known Limitations:**
+- Uniqlo/M&S designated merchant status varies by year; always verify current list
+- EveryMile overseas promo terms may change after June 2026; monitor for Q3-Q4 2026 updates
+- Annual fees on EveryMile subject to change; confirm with HSBC before applying
+- Partner restaurant lists updated monthly; visit cathay.com/dining for real-time list
+
+---
+
+**Document Version:** 2.0 (Enhanced with Specific Vendor Names & Nuances)  
+**Last Updated:** March 22, 2026  
+**Next Review:** June 2026 (for Q2 overseas promo and new merchant updates)  
+**Prepared For:** Miles calculation programs requiring factually accurate merchant category data
+
+---
+
+*Disclaimer: This database provides analysis based on publicly available credit card terms and conditions as of March 2026. Offers, rates, merchant lists, and MCC classifications may change without notice. Always verify current terms with issuers before making decisions. Merchant category codes (MCCs) are determined by acquiring banks, not by cardholders or card issuers. Individual circumstances may vary based on card tier, account history, and membership status. This document is for informational purposes only and does not constitute financial advice.*

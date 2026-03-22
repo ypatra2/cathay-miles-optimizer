@@ -9,12 +9,16 @@ from io import BytesIO
 # Load environment variables (override allows hot-reloading if users change .env)
 load_dotenv(override=True)
 
-# The mapped categories that exist in our rules engine
+# The mapped categories that exist in our rules engine (v1.2)
 VALID_CATEGORIES = [
     "Cathay Pacific Flights",
     "HK Express Flights",
-    "Other Airlines",
-    "Travel Booking (Klook/Agoda)",
+    "Other Airlines (Direct Booking)",
+    "Other Airlines (via OTA)",
+    "Travel Booking (Designated OTA)",
+    "Travel Booking (Non-Designated OTA)",
+    "EveryMile Designated Everyday",
+    "Cathay Partner Dining",
     "Dining (Premium)",
     "Dining (Casual)",
     "Food Delivery",
@@ -27,93 +31,44 @@ VALID_CATEGORIES = [
 
 def parse_transaction_image(image) -> Dict[str, Any]:
     """
-    Passes the PIL Image to Gemini 1.5 Flash via REST API to extract vendor, amount, and best-fit category in strict JSON.
-    This bypasses protobuf environment issues completely.
+    Passes the PIL Image to Gemini Flash via REST API to extract vendor, amount, and best-fit category.
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key or api_key == "your_api_key_here":
         return {"error": "API Key is missing. Please populate the .env file."}
 
     prompt = f"""
-    You are an expert financial assistant. Analyze this transaction receipt, checkout screenshot, or bill.
+    You are an expert financial assistant specializing in Hong Kong credit card rewards.
+    Analyze this transaction receipt, checkout screenshot, or bill.
+
     Extract the following details:
-    1. 'vendor': The merchant or vendor name. Provide a short, clean name (e.g., if it says Klook Hong Kong, just return Klook).
+    1. 'vendor': The merchant or vendor name. Provide a short, clean name (e.g., "Klook", "Starbucks", "Cathay Pacific").
     2. 'amount': The transaction total amount in HKD as a float. Do not include currency symbols. If it's a foreign currency, extract the raw numeric total anyway.
-    3. 'category': The best matching category for this transaction from the following exact list. You MUST choose exactly one string from this array:
+    3. 'category': The best matching category from the following exact list. You MUST choose exactly one string from this array:
     {json.dumps(VALID_CATEGORIES)}
-    
-    Category Guessing Logic:
-    - If the merchant is Klook, Agoda, or Expedia use 'Travel Booking (Klook/Agoda)'.
-    - If the merchant is Keeta, Foodpanda or Deliveroo, use 'Food Delivery'.
-    - If it's a restaurant bill, use 'Dining (Casual)' or 'Dining (Premium)' depending on the apparent cost/prestige.
-    - If it's Cathay Pacific flights, use 'Cathay Pacific Flights'.
-    - If it's an online store like Taobao or Amazon, use 'Online General'.
-    - If it's an in-store shop like Uniqlo or M&S, use 'Shopping (In-Store General)'.
-    
-    Return the response as a valid JSON object matching this schema:
-    {{
-      "vendor": "String",
-      "amount": Float,
-      "category": "String"
-    }}
-    Ensure your output is pure, unformatted JSON with no markdown wrapping (no ```json).
-    """
 
-    # Convert PIL Image to Base64
-    buffered = BytesIO()
-    # Convert image format if necessary (some screenshots are RGBA/PNG)
-    if image.mode in ("RGBA", "P"):
-        image = image.convert("RGB")
-    image.save(buffered, format="JPEG")
-    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    Category Decision Logic (CRITICAL — follow strictly):
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
-    
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": "image/jpeg",
-                            "data": img_str
-                        }
-                    }
-                ]
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.0,
-            "responseMimeType": "application/json"
-        }
-    }
-    
-    headers = {
-        "Content-Type": "application/json",
-        "X-goog-api-key": api_key
-    }
-    
-    try:
-        response = requests.post(url, json=payload, headers=headers)
-        if response.status_code != 200:
-            error_msg = response.text
-            if "User location is not supported" in error_msg:
-                return {"error": "Google Gemini API is geo-blocked. Make sure your VPN is routing Terminal/Python traffic!"}
-            if "not found" in error_msg:
-                return {"error": f"Model not found via API. Raw: {error_msg}"}
-            return {"error": f"API Error {response.status_code}: {error_msg}"}
-            
-        data = response.json()
-        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
-        result = json.loads(raw_text)
-        
-        # Validation Fallback
-        if result.get("category") not in VALID_CATEGORIES:
-            result["category"] = "Shopping (In-Store General)" 
-            
-        return result
-    except json.JSONDecodeError:
-        return {"error": "Failed to decode Gemini response into JSON."}
-    except Exception as e:
-        return {"error": str(e)}
+    FLIGHTS:
+    - Cathay Pacific booked on cathay.com or Cathay app → "Cathay Pacific Flights"
+    - HK Express booked on hkexpress.com or UO app → "HK Express Flights"
+    - Any airline booked DIRECT on the airline's own website (Air India, Indigo, JAL, SQ, etc.) → "Other Airlines (Direct Booking)"
+    - Any airline booked via OTA (Trip.com, Expedia, MakeMyTrip, Skyscanner) → "Other Airlines (via OTA)"
+
+    TRAVEL / EXPERIENCES:
+    - Klook, KKday → "Travel Booking (Designated OTA)"
+    - Trip.com, Expedia, Agoda, Booking.com, Hotels.com, Pelago, Kayak, MakeMyTrip → "Travel Booking (Non-Designated OTA)"
+
+    EVERYDAY (CAFES / TRANSPORT):
+    - Starbucks, Pacific Coffee, Pret A Manger, Blue Bottle, Lady M, Tea WG, Green Common, NOC → "EveryMile Designated Everyday"
+    - MTR, KMB, Citybus, First Bus, taxi apps (SynCab, Dash, Joie) → "EveryMile Designated Everyday"
+    - AVIS, Hertz, Tesla SuperCharger → "EveryMile Designated Everyday"
+
+    DINING:
+    - Elephant Grounds, La Rambla, Morty's, The Diplomat, East Hotel restaurants → "Cathay Partner Dining"
+    - Michelin-starred or fine dining (Amber, TATE, Écriture, etc.) or bill > HK$800 → "Dining (Premium)"
+    - Regular restaurant bill → "Dining (Casual)"
+
+    FOOD DELIVERY:
+    - Keeta, Foodpanda, Deliveroo → "Food Delivery" (NOT dining — MCC 5814)
+
