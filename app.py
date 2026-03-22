@@ -9,6 +9,13 @@ from gemini_parser import parse_transaction_image
 # Force reload of environment variables on each run to capture .env updates securely
 load_dotenv(override=True)
 api_key_status = os.getenv("GEMINI_API_KEY")
+# Also check Streamlit secrets (for cloud deployment)
+try:
+    cloud_key = st.secrets.get("GEMINI_API_KEY", None)
+    if cloud_key:
+        api_key_status = cloud_key
+except Exception:
+    pass
 
 # Initialize Session State Variables to prevent unnecessary API calls
 if 'extracted_vendor' not in st.session_state:

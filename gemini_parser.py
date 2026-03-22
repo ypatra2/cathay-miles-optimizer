@@ -9,6 +9,17 @@ from io import BytesIO
 # Load environment variables (override allows hot-reloading if users change .env)
 load_dotenv(override=True)
 
+def _get_api_key():
+    """Load API key from Streamlit secrets (cloud) or .env (local)."""
+    try:
+        import streamlit as st
+        key = st.secrets.get("GEMINI_API_KEY", None)
+        if key:
+            return key
+    except Exception:
+        pass
+    return os.getenv("GEMINI_API_KEY")
+
 # The mapped categories that exist in our rules engine (v1.2)
 VALID_CATEGORIES = [
     "Cathay Pacific Flights",
@@ -33,9 +44,9 @@ def parse_transaction_image(image) -> Dict[str, Any]:
     """
     Passes the PIL Image to Gemini Flash via REST API to extract vendor, amount, and best-fit category.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = _get_api_key()
     if not api_key or api_key == "your_api_key_here":
-        return {"error": "API Key is missing. Please populate the .env file."}
+        return {"error": "API Key is missing. Please populate the .env file (local) or Streamlit secrets (cloud)."}
 
     prompt = f"""
     You are an expert financial assistant specializing in Hong Kong credit card rewards.
