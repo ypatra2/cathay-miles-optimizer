@@ -80,13 +80,14 @@ def calculate_miles(card, category, amount):
         elif category == "Cathay Pacific Flights":
             rate = 5.0
             notes = "Non-designated on EveryMile. Use SC Cathay instead for HK$2=1mi."
+        elif category == "Octopus AAVS":
+            # Special low-earn: 1 RC per HK$250, × 20 miles = HK$12.5 per mile
+            rate = 12.5
+            notes = "AAVS low-earn: 1RC/HK$250 (×20mi) = HK$12.5/mi. SC Cathay is far better at HK$6/mi."
         else:
             # General local, OTA (non-designated), airlines, dining, shopping, food delivery
             rate = 5.0
-            if category == "Octopus AAVS":
-                notes = "HK$5=1mi but requires manual RC→Miles conversion. SC Cathay auto-converts."
-            else:
-                notes = "General rate: HK$5=1 mile."
+            notes = "General rate: HK$5=1 mile."
 
         miles = amount / rate if rate > 0 else 0
 
@@ -123,6 +124,11 @@ def calculate_miles(card, category, amount):
             # 3.6% RC → 3.6 RC per $100 → 36 miles per $100 → HK$2.78 = 1 mile
             rate = 2.78
             notes = "3.6% Red Hot Rewards (Dining). B1G1 at Michelin restaurants."
+            miles = amount / rate
+        elif category == "Octopus AAVS":
+            # AAVS is special low-earn on VISA Sig: base 0.4% = HK$25 per mile
+            rate = 25.0
+            notes = "AAVS low-earn category: base 0.4% = HK$25/mi. Use SC Cathay instead."
             miles = amount / rate
         else:
             # 1.6% RC → 1.6 RC per $100 → 16 miles per $100 → HK$6.25 = 1 mile
