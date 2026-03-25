@@ -17,6 +17,7 @@ CATEGORIES = [
     "Travel Booking (Designated OTA)",      # Klook, KKday — EveryMile designated
     "Travel Booking (Non-Designated OTA)",  # Trip.com, Expedia, MakeMyTrip
     "EveryMile Designated Everyday",        # Starbucks, MTR, KMB, Pacific Coffee, etc.
+    "Ride-Hailing (Uber/Taxi Apps)",        # Uber, HKTaxi, DiDi — online e-commerce coded
     "Cathay Partner Dining",                # Exclusive SC Cathay HK$4=2 miles
     "Dining (Premium)",                     # Michelin / high-end
     "Dining (Casual)",                      # Regular restaurants
@@ -58,6 +59,9 @@ def calculate_miles(card, category, amount):
         elif category == "Octopus AAVS":
             rate = 6.0
             notes = "Automatic monthly conversion. Passive earning, zero effort."
+        elif category == "Ride-Hailing (Uber/Taxi Apps)":
+            rate = 6.0
+            notes = "HK$6=1mi. TIP: Link Cathay in Uber app for +20mi/ride (+40mi airport) on top!"
         else:
             # Food Delivery, Online General, Shopping, OTA bookings, EveryMile Designated = all HK$6
             rate = 6.0
@@ -103,11 +107,15 @@ def calculate_miles(card, category, amount):
             miles = amount / rate
         elif category in ["Online General", "Food Delivery",
                           "Travel Booking (Non-Designated OTA)", "Other Airlines (via OTA)",
-                          "Travel Booking (Designated OTA)"]:
+                          "Travel Booking (Designated OTA)",
+                          "Ride-Hailing (Uber/Taxi Apps)"]:
             # 4% RC → 4 RC per $100 → 40 miles per $100 → HK$2.5 = 1 mile
-            # v1.2 confirms: Red 4% online captures MCC 4722 (OTA bookings)
+            # Uber processed overseas as online e-commerce; Red 4% captures it
             rate = 2.5
-            notes = "4% online rebate (first HK$10K/month). MCC 4722 OTA captured."
+            if category == "Ride-Hailing (Uber/Taxi Apps)":
+                notes = "4% online (Uber coded as online e-commerce). +20mi/ride via Cathay partnership!"
+            else:
+                notes = "4% online rebate (first HK$10K/month). MCC 4722 OTA captured."
             miles = amount / rate
         else:
             # Base 0.4% for everything else (dining, in-store, Octopus, flights)

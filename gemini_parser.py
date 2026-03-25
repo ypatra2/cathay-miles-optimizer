@@ -20,7 +20,7 @@ def _get_api_key():
         pass
     return os.getenv("GEMINI_API_KEY")
 
-# The mapped categories that exist in our rules engine (v1.2)
+# The mapped categories that exist in our rules engine (v3.1)
 VALID_CATEGORIES = [
     "Cathay Pacific Flights",
     "HK Express Flights",
@@ -29,6 +29,7 @@ VALID_CATEGORIES = [
     "Travel Booking (Designated OTA)",
     "Travel Booking (Non-Designated OTA)",
     "EveryMile Designated Everyday",
+    "Ride-Hailing (Uber/Taxi Apps)",
     "Cathay Partner Dining",
     "Dining (Premium)",
     "Dining (Casual)",
@@ -70,10 +71,17 @@ def parse_transaction_image(image) -> Dict[str, Any]:
     - Klook, KKday → "Travel Booking (Designated OTA)"
     - Trip.com, Expedia, Agoda, Booking.com, Hotels.com, Pelago, Kayak, MakeMyTrip → "Travel Booking (Non-Designated OTA)"
 
-    EVERYDAY (CAFES / TRANSPORT):
+    EVERYDAY (CAFES / TRANSPORT - EveryMile Designated):
     - Starbucks, Pacific Coffee, Pret A Manger, Blue Bottle, Lady M, Tea WG, Green Common, NOC → "EveryMile Designated Everyday"
-    - MTR, KMB, Citybus, First Bus, taxi apps (SynCab, Dash, Joie) → "EveryMile Designated Everyday"
+    - MTR, KMB, Citybus, First Bus, taxi apps (SynCab, Dash, Joie, Amigo, Big Bee) → "EveryMile Designated Everyday"
     - AVIS, Hertz, Tesla SuperCharger → "EveryMile Designated Everyday"
+    - ⚠️ IMPORTANT: Uber, HKTaxi, DiDi are NOT on this list! See RIDE-HAILING below.
+
+    RIDE-HAILING (Online-coded, NOT designated transport):
+    - Uber, Uber Taxi, HKTaxi, DiDi → "Ride-Hailing (Uber/Taxi Apps)"
+    - These are processed as online e-commerce by overseas entities (e.g., Uber BV Netherlands)
+    - They are NOT on EveryMile's designated transport list
+    - HSBC Red's 4% online category captures them
 
     DINING:
     - Elephant Grounds, La Rambla, Morty's, The Diplomat, East Hotel restaurants → "Cathay Partner Dining"
@@ -148,6 +156,14 @@ def parse_transaction_image(image) -> Dict[str, Any]:
         data = response.json()
         raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
         result = json.loads(raw_text)
+
+        # Apply vendor overrides: if we have a verified mapping for this vendor,
+        # use it instead of Gemini's AI guess (prevents MCC misclassification)
+        from vendor_overrides import get_vendor_override
+        vendor_name = result.get("vendor", "")
+        override = get_vendor_override(vendor_name)
+        if override:
+            result["category"] = override
 
         # Validation Fallback
         if result.get("category") not in VALID_CATEGORIES:
