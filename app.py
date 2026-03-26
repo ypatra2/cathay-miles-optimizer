@@ -37,6 +37,8 @@ if 'uploader_key' not in st.session_state:
     st.session_state.uploader_key = 0
 if 'user_context' not in st.session_state:
     st.session_state.user_context = ""
+if 'context_key' not in st.session_state:
+    st.session_state.context_key = 0
 
 # Configure the page layout
 st.set_page_config(
@@ -176,7 +178,7 @@ with left_col:
         "Describe the transaction (e.g., 'Uber ride to airport, HK$150')",
         value=st.session_state.user_context,
         height=80,
-        key="context_input",
+        key=f"context_{st.session_state.context_key}",
         label_visibility="collapsed"
     )
     st.session_state.user_context = user_context
@@ -217,10 +219,8 @@ with left_col:
             st.session_state.extracted_vendor = "Unknown (Manual Input)"
             st.session_state.user_context = ""
             st.session_state._last_speech = ""
-            # Clear widget cached values so text area resets
-            if 'context_input' in st.session_state:
-                del st.session_state['context_input']
             st.session_state.uploader_key += 1
+            st.session_state.context_key += 1  # Force fresh text area widget
             st.rerun()
 
     # Display successful extraction stats
