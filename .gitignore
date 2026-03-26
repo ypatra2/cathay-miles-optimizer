@@ -1,8 +1,8 @@
-# Securty and Secrets
+# Secrets & API Keys
 .env
-secret.toml
+.streamlit/secrets.toml
 
-# Python cache & virtualenvs
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -11,13 +11,23 @@ venv/
 env/
 .venv/
 
-# Environment / OS
+# OS
 .DS_Store
-.AppleDouble
-.LSOverride
 Thumbs.db
 
-# Test scripts / Junk
-dummy_receipt.jpg
-test_api.py
-test_gemini.py
+# Dev/Test artifacts (keep locally, never push)
+test_*.py
+dummy_*.jpg
+*.log
+
+# Research & data source docs (engine is already built from these)
+Cathay_*.md
+uber-*.md
+
+# Docker (deployed via Streamlit Cloud)
+Dockerfile
+run.sh
+docker-compose*.yml
+
+# Legacy component directory
+speech_component/
