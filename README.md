@@ -21,6 +21,8 @@ A Hong Kong–focused credit card optimizer that determines which card earns the
 | 💬 **Text Context** | Type supplementary info to help the AI classify ambiguous transactions |
 | 🔍 **Vendor Overrides** | 50+ pre-verified vendor→category mappings bypass AI guessing for known merchants |
 | 🧮 **Deterministic Engine** | All miles calculations are done in Python, not by AI — guaranteeing mathematical accuracy |
+| 📊 **Analytics Dashboard** | Track total miles earned, spending categories, and card utilization with Plotly |
+| 💾 **Persistence** | Secure local transaction history stored in SQLite |
 | 📱 **Responsive UI** | Premium dark-mode design, works on desktop and mobile |
 
 ## Supported Cards
@@ -59,53 +61,4 @@ streamlit run app.py
 ## Architecture
 
 ```mermaid
-graph TD
-    %% Styling
-    classDef user fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff,rx:8px,ry:8px;
-    classDef ui fill:#00b2a9,stroke:#008b84,stroke-width:2px,color:#fff,rx:8px,ry:8px;
-    classDef api fill:#e2e8f0,stroke:#cbd5e1,stroke-width:2px,color:#1e293b,rx:8px,ry:8px;
-    classDef engine fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff,rx:8px,ry:8px;
-    classDef result fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff,rx:8px,ry:8px;
-
-    %% Workflow
-    A[👤 User Input<br/>Receipts, Voice, Text]:::user --> B(📱 Streamlit Frontend<br/>app.py):::ui
-    
-    subgraph AI Extraction
-        B -- "Multimodal Data" --> C{🤖 Gemini 1.5 Flash<br/>gemini_parser.py}:::api
-        C -- "Extracts" --> D[📄 Raw JSON<br/>Vendor, Amount, Best Guess]:::api
-    end
-    
-    subgraph Deterministic Engine
-        D --> E{🔍 Vendor Overrides<br/>vendor_overrides.py}:::engine
-        E -- "Verified Match" --> F[Exact Category]:::engine
-        E -- "Unknown Vendor" --> G[Fallback Array]:::engine
-        
-        F --> H((🧮 Math Engine<br/>optimizer.py)):::engine
-        G --> H
-    end
-    
-    H -- "Calculates 4 Cards × 17 Cats" --> I[🏆 Optimal Card & Miles<br/>Recommendation]:::result
-    I -- "Renders" --> B
-```
-
-```
-app.py              → Streamlit UI (multi-image upload, voice input, results display)
-optimizer.py        → Deterministic miles calculation engine (17 categories × 4 cards)
-gemini_parser.py    → Gemini Flash API integration (multi-image + text context)
-vendor_overrides.py → Verified vendor→category mappings (bypasses AI for known merchants)
-speech_input.py     → Browser Web Speech API component (inline HTML, no dependencies)
-```
-
-## Security
-
-- `.env` and `secrets.toml` are gitignored — API keys never leave your machine
-- Receipt images are processed in-memory via REST API, never stored to disk
-- No telemetry, no analytics, no tracking
-
-## Geo-Blocking Note
-
-Google's Gemini API is geo-blocked in Hong Kong. If you're in HK, route your network through a VPN (e.g., ProtonVPN) before analyzing receipts. The app provides a clear error message when geo-blocked.
-
----
-
-Built with [Streamlit](https://streamlit.io) · [Google Gemini](https://ai.google.dev) · Hong Kong credit card nerd energy ⚡
+graph
