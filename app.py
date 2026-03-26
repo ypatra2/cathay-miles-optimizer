@@ -269,11 +269,18 @@ with right_col:
 
         # UI Logic to map card type to visual styles
         def get_card_vibe(card_name):
-            if "SC Cathay" in card_name: return "https://www.cathaypacific.com/content/dam/focal-point/digital-library/hk/sc-cx-mastercard/sc-card-face-w.renditionimage.1600.1600.jpg"
+            if "SC Cathay" in card_name:
+                try:
+                    import base64
+                    with open("assets/sc_cathay_cropped.png", "rb") as f:
+                        return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+                except Exception:
+                    # Fallback if local cropped image isn't built yet
+                    return "https://www.cathaypacific.com/content/dam/focal-point/digital-library/hk/sc-cx-mastercard/sc-card-face-w.renditionimage.1600.1600.jpg"
             if "EveryMile" in card_name: return "https://photos-hk.cdn-moneysmart.com/credit_cards/uploads/products/images/image_url_2023-03-03_hsbc-everymile-card_11zon.png"
             if "Red" in card_name: return "https://www.hsbc.com.hk/content/dam/hsbc/hk/images/mass/credit-cards/tile-16-9/9358-hsbc-red-credit-card-1280x828.jpg"
             if "Signature" in card_name: return "https://www.hsbc.com.hk/content/dam/hsbc/hk/images/mass/credit-cards/tile-16-9/9358-hsbc-visa-signature-card-1280x828.jpg"
-            return "https://www.cathaypacific.com/content/dam/focal-point/digital-library/hk/sc-cx-mastercard/sc-card-face-w.renditionimage.1600.1600.jpg"
+            return ""
 
         best = results[0]
         img_url = get_card_vibe(best['card'])
