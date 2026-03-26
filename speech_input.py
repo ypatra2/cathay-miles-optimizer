@@ -53,6 +53,7 @@ def speech_to_text_button():
             display: none;
         }
         .transcript-box.visible { display: block; }
+        .interim { opacity: 0.6; font-style: italic; }
     </style>
     <div class="speech-container">
         <button class="mic-btn" id="micBtn" onclick="toggleListening()">
@@ -66,6 +67,9 @@ def speech_to_text_button():
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
         let isListening = false;
+        let hasInserted = false;     // Prevent duplicate insertions
+        let originalTextAreaValue = ''; // Store original value before speech
+
         const btn = document.getElementById('micBtn');
         const icon = document.getElementById('micIcon');
         const label = document.getElementById('micLabel');
@@ -79,45 +83,35 @@ def speech_to_text_button():
         } else {
             recognition = new SpeechRecognition();
             recognition.continuous = false;
-            recognition.interimResults = false;
+            recognition.interimResults = true;  // Show live preview
             recognition.lang = 'en-US';
 
             recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                stopListening();
-                transcriptBox.textContent = '🗣️ "' + transcript + '"';
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const text = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += text;
+                    } else {
+                        interimTranscript += text;
+                    }
+                }
+
+                // Show live preview in transcript box (interim = italic, final = solid)
+                if (finalTranscript) {
+                    transcriptBox.innerHTML = '🗣️ "' + finalTranscript + '"';
+                } else if (interimTranscript) {
+                    transcriptBox.innerHTML = '🗣️ <span class="interim">' + interimTranscript + '...</span>';
+                }
                 transcriptBox.classList.add('visible');
 
-                // Try to insert into the Streamlit text area via parent DOM
-                try {
-                    const textareas = window.parent.document.querySelectorAll('textarea');
-                    if (textareas.length > 0) {
-                        // Find the context textarea (usually the last one or one with specific placeholder)
-                        let targetTA = null;
-                        textareas.forEach(function(ta) {
-                            if (ta.placeholder && ta.placeholder.toLowerCase().includes('describe')) {
-                                targetTA = ta;
-                            }
-                        });
-                        if (!targetTA) targetTA = textareas[textareas.length - 1];
-
-                        // Append transcript
-                        const separator = targetTA.value.trim() ? '. ' : '';
-                        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-                            window.parent.HTMLTextAreaElement.prototype, 'value'
-                        ).set;
-                        nativeInputValueSetter.call(targetTA, targetTA.value + separator + transcript);
-                        targetTA.dispatchEvent(new window.parent.Event('input', { bubbles: true }));
-                        status.textContent = '✅ Inserted into text field!';
-                    }
-                } catch(e) {
-                    // Fallback: copy to clipboard
-                    try {
-                        navigator.clipboard.writeText(transcript);
-                        status.textContent = '📋 Copied to clipboard! Paste into the text field.';
-                    } catch(e2) {
-                        status.textContent = '👆 Copy the text above and paste into the field.';
-                    }
+                // Only insert into text area ONCE when we have the final result
+                if (finalTranscript && !hasInserted) {
+                    hasInserted = true;
+                    insertIntoTextArea(finalTranscript);
+                    stopListening();
                 }
             };
 
@@ -125,6 +119,8 @@ def speech_to_text_button():
                 stopListening();
                 if (event.error === 'not-allowed') {
                     status.textContent = '⚠️ Microphone access denied. Check browser permissions.';
+                } else if (event.error === 'no-speech') {
+                    status.textContent = '⚠️ No speech detected. Try again.';
                 } else {
                     status.textContent = '⚠️ Error: ' + event.error;
                 }
@@ -135,6 +131,39 @@ def speech_to_text_button():
             };
         }
 
+        function insertIntoTextArea(transcript) {
+            try {
+                const textareas = window.parent.document.querySelectorAll('textarea');
+                if (textareas.length > 0) {
+                    let targetTA = null;
+                    textareas.forEach(function(ta) {
+                        if (ta.placeholder && ta.placeholder.toLowerCase().includes('describe')) {
+                            targetTA = ta;
+                        }
+                    });
+                    if (!targetTA) targetTA = textareas[textareas.length - 1];
+
+                    // Append only the final transcript to the ORIGINAL value (not accumulated partials)
+                    const separator = originalTextAreaValue.trim() ? '. ' : '';
+                    const newValue = originalTextAreaValue + separator + transcript;
+
+                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                        window.parent.HTMLTextAreaElement.prototype, 'value'
+                    ).set;
+                    nativeInputValueSetter.call(targetTA, newValue);
+                    targetTA.dispatchEvent(new window.parent.Event('input', { bubbles: true }));
+                    status.textContent = '✅ Inserted into text field!';
+                }
+            } catch(e) {
+                try {
+                    navigator.clipboard.writeText(transcript);
+                    status.textContent = '📋 Copied to clipboard! Paste into the text field.';
+                } catch(e2) {
+                    status.textContent = '👆 Copy the text above and paste into the field.';
+                }
+            }
+        }
+
         function toggleListening() {
             if (!recognition) return;
             if (isListening) { recognition.stop(); stopListening(); }
@@ -143,11 +172,28 @@ def speech_to_text_button():
 
         function startListening() {
             isListening = true;
+            hasInserted = false;
             btn.classList.add('listening');
             icon.textContent = '⏹️';
             label.textContent = 'Listening...';
             status.textContent = 'Speak now — describe your transaction';
             transcriptBox.classList.remove('visible');
+
+            // Capture the current text area value BEFORE speech starts
+            try {
+                const textareas = window.parent.document.querySelectorAll('textarea');
+                let targetTA = null;
+                textareas.forEach(function(ta) {
+                    if (ta.placeholder && ta.placeholder.toLowerCase().includes('describe')) {
+                        targetTA = ta;
+                    }
+                });
+                if (!targetTA && textareas.length > 0) targetTA = textareas[textareas.length - 1];
+                originalTextAreaValue = targetTA ? targetTA.value : '';
+            } catch(e) {
+                originalTextAreaValue = '';
+            }
+
             recognition.start();
         }
 
