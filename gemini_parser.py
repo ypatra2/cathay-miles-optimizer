@@ -2,7 +2,7 @@ import os
 import json
 import base64
 import requests
-from typing import Dict, Any
+from typing import Dict, Any, List
 from dotenv import load_dotenv
 from io import BytesIO
 
@@ -20,7 +20,7 @@ def _get_api_key():
         pass
     return os.getenv("GEMINI_API_KEY")
 
-# The mapped categories that exist in our rules engine (v3.1)
+# The mapped categories that exist in our rules engine (v3.2)
 VALID_CATEGORIES = [
     "Cathay Pacific Flights",
     "HK Express Flights",
@@ -41,17 +41,47 @@ VALID_CATEGORIES = [
     "Overseas"
 ]
 
-def parse_transaction_image(image) -> Dict[str, Any]:
+
+def _image_to_base64(image) -> str:
+    """Convert a PIL Image to base64-encoded JPEG string."""
+    buffered = BytesIO()
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+    image.save(buffered, format="JPEG")
+    return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+
+def parse_transaction(images: List, user_context: str = "") -> Dict[str, Any]:
     """
-    Passes the PIL Image to Gemini Flash via REST API to extract vendor, amount, and best-fit category.
+    Passes one or more PIL Images + optional user context to Gemini Flash
+    via REST API to extract vendor, amount, and best-fit category.
+    Supports multi-image analysis for richer context extraction.
     """
     api_key = _get_api_key()
     if not api_key or api_key == "your_api_key_here":
         return {"error": "API Key is missing. Please populate the .env file (local) or Streamlit secrets (cloud)."}
 
+    if not images and not user_context:
+        return {"error": "Please provide at least one image or text description."}
+
+    # Build context section
+    context_section = ""
+    if user_context.strip():
+        context_section = f"""
+    ADDITIONAL USER CONTEXT (use this to supplement visual extraction):
+    \"{user_context.strip()}\"
+    The user has provided this extra information about the transaction. Use it to refine
+    your extraction of vendor, amount, and category. If the user explicitly mentions a
+    vendor or amount, prioritize their input over ambiguous visual data.
+    """
+
+    image_count_note = f"You are analyzing {len(images)} image(s)." if images else "No images provided; extract from the user's text description only."
+
     prompt = f"""
     You are an expert financial assistant specializing in Hong Kong credit card rewards.
-    Analyze this transaction receipt, checkout screenshot, or bill.
+    {image_count_note}
+    {"Analyze these transaction receipts, checkout screenshots, or bills together." if images else ""}
+    {context_section}
 
     Extract the following details:
     1. 'vendor': The merchant or vendor name. Provide a short, clean name (e.g., "Klook", "Starbucks", "Cathay Pacific").
@@ -80,8 +110,6 @@ def parse_transaction_image(image) -> Dict[str, Any]:
     RIDE-HAILING (Online-coded, NOT designated transport):
     - Uber, Uber Taxi, HKTaxi, DiDi → "Ride-Hailing (Uber/Taxi Apps)"
     - These are processed as online e-commerce by overseas entities (e.g., Uber BV Netherlands)
-    - They are NOT on EveryMile's designated transport list
-    - HSBC Red's 4% online category captures them
 
     DINING:
     - Elephant Grounds, La Rambla, Morty's, The Diplomat, East Hotel restaurants → "Cathay Partner Dining"
@@ -109,29 +137,21 @@ def parse_transaction_image(image) -> Dict[str, Any]:
     Ensure your output is pure, unformatted JSON with no markdown wrapping.
     """
 
-    # Convert PIL Image to Base64
-    buffered = BytesIO()
-    if image.mode in ("RGBA", "P"):
-        image = image.convert("RGB")
-    image.save(buffered, format="JPEG")
-    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    # Build multimodal parts: text prompt + all images
+    parts = [{"text": prompt}]
+    for img in images:
+        img_b64 = _image_to_base64(img)
+        parts.append({
+            "inline_data": {
+                "mime_type": "image/jpeg",
+                "data": img_b64
+            }
+        })
 
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
     payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": "image/jpeg",
-                            "data": img_str
-                        }
-                    }
-                ]
-            }
-        ],
+        "contents": [{"parts": parts}],
         "generationConfig": {
             "temperature": 0.0,
             "responseMimeType": "application/json"
@@ -157,8 +177,7 @@ def parse_transaction_image(image) -> Dict[str, Any]:
         raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
         result = json.loads(raw_text)
 
-        # Apply vendor overrides: if we have a verified mapping for this vendor,
-        # use it instead of Gemini's AI guess (prevents MCC misclassification)
+        # Apply vendor overrides: verified mapping beats AI guess
         from vendor_overrides import get_vendor_override
         vendor_name = result.get("vendor", "")
         override = get_vendor_override(vendor_name)

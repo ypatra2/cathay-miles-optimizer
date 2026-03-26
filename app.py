@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import os
 
 from optimizer import CATEGORIES, get_recommendations
-from gemini_parser import parse_transaction_image
+from gemini_parser import parse_transaction
+from speech_input import speech_to_text_button
 
 # Force reload of environment variables on each run to capture .env updates securely
 load_dotenv(override=True)
@@ -34,10 +35,12 @@ if 'final_category' not in st.session_state:
     st.session_state.final_category = "Shopping (In-Store General)"
 if 'uploader_key' not in st.session_state:
     st.session_state.uploader_key = 0
+if 'user_context' not in st.session_state:
+    st.session_state.user_context = ""
 
 # Configure the page layout
 st.set_page_config(
-    page_title="Cathay Miles Optimizer v3.0",
+    page_title="Cathay Miles Optimizer v3.2",
     page_icon="✈️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -46,12 +49,9 @@ st.set_page_config(
 # Inject custom CSS for premium dark mode aesthetics
 st.markdown("""
     <style>
-    /* Global App Styling */
     .stApp {
         background: linear-gradient(180deg, #0a0c10 0%, #0f1115 100%);
     }
-    
-    /* Header styling */
     h1 {
         font-weight: 800 !important;
         background: -webkit-linear-gradient(45deg, #00b2a9, #4db8ff);
@@ -60,14 +60,11 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: -1px;
     }
-    
     .subtitle {
         color: #94a3b8;
         font-size: 1.1rem;
         margin-bottom: 2rem;
     }
-
-    /* Cards Styling */
     .best-card {
         background: linear-gradient(135deg, rgba(0, 178, 169, 0.1) 0%, rgba(0, 178, 169, 0.05) 100%);
         border: 1px solid rgba(0, 178, 169, 0.3);
@@ -82,7 +79,6 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 12px 40px rgba(0, 178, 169, 0.2);
     }
-    
     .other-card {
         background: rgba(28, 31, 38, 0.6);
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -90,8 +86,6 @@ st.markdown("""
         padding: 16px;
         margin-bottom: 12px;
     }
-    
-    /* Typography inside cards */
     .card-title {
         font-size: 1.3rem;
         font-weight: 700;
@@ -101,7 +95,6 @@ st.markdown("""
         align-items: center;
         gap: 8px;
     }
-    
     .miles-highlight {
         font-size: 2.5rem;
         font-weight: 800;
@@ -109,7 +102,6 @@ st.markdown("""
         line-height: 1;
         margin-bottom: 4px;
     }
-    
     .rate-text {
         font-size: 0.9rem;
         color: #cbd5e1;
@@ -119,14 +111,11 @@ st.markdown("""
         display: inline-block;
         margin-bottom: 8px;
     }
-    
     .notes-text {
         font-size: 0.85rem;
         color: #94a3b8;
         font-style: italic;
     }
-
-    /* Badges */
     .badge-winner {
         background: #00b2a9;
         color: #0f1115;
@@ -137,8 +126,11 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-
-    /* Mobile adjustments */
+    .context-label {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        margin-bottom: 4px;
+    }
     @media (max-width: 600px) {
         .miles-highlight { font-size: 2.2rem; }
     }
@@ -147,53 +139,93 @@ st.markdown("""
 
 
 st.title("Cathay Miles ✨ AI Optimizer")
-st.markdown("<div class='subtitle'>Upload a screenshot of your transaction and instantly discover which credit card maximizes your Asia Miles! Now powered by v1.2 data with expanded categories.</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Upload screenshots, type or speak your transaction details, and discover which card maximizes your Asia Miles!</div>", unsafe_allow_html=True)
 
 if not api_key_status or api_key_status == "your_api_key_here":
-    st.error("⚠️ The **GEMINI_API_KEY** is missing or default. Please populate the `.env` file in the project folder with your actual key to enable visual parsing.")
+    st.error("⚠️ The **GEMINI_API_KEY** is missing or default. Please populate the `.env` file or Streamlit secrets.")
     st.info("You can still use the manual override below while the key is missing.")
 
-# Split UI into two dynamic columns for Wide Desktop / Stacking Mobile layouts
+# Split UI into two dynamic columns
 left_col, right_col = st.columns([1, 1], gap="large")
 
 with left_col:
     # --- AI Upload Section ---
-    st.subheader("1. AI Screenshot Parsing")
-    uploaded_file = st.file_uploader(
-        "Upload a receipt, checkout screen, or bill...", 
-        type=["png", "jpg", "jpeg"], 
+    st.subheader("1. AI Transaction Parsing")
+
+    # Multi-image uploader
+    uploaded_files = st.file_uploader(
+        "Upload receipts, checkout screens, or bills (multiple allowed)...",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True,
         key=f"uploader_{st.session_state.uploader_key}"
     )
 
-    # If user uploads image, present buttons to explicitly trigger API
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Transaction Screenshot", use_container_width=True)
-        
-        col_analyze, col_clear = st.columns(2)
-        with col_analyze:
-            if st.button("✨ Analyze with Gemini API", use_container_width=True):
-                with st.spinner("Analyzing image and extracting merchant data securely..."):
-                    extraction = parse_transaction_image(image)
-                    
-                if "error" in extraction:
-                    st.error(f"Analysis Failed: {extraction['error']}")
-                else:
-                    st.success("✅ Extraction Complete! The manual form has been populated.")
-                    st.session_state.extracted_vendor = extraction.get("vendor", "Unknown")
-                    st.session_state.extracted_amount = float(extraction.get("amount", 0.0))
-                    st.session_state.extracted_category = extraction.get("category", "Shopping (In-Store General)")
-                    st.session_state.image_analyzed = True
+    # Show image previews in a grid
+    if uploaded_files:
+        cols = st.columns(min(len(uploaded_files), 3))
+        for i, f in enumerate(uploaded_files):
+            with cols[i % 3]:
+                img = Image.open(f)
+                st.image(img, caption=f.name, use_container_width=True)
 
-        with col_clear:
-            if st.button("🗑️ Clear Image & Results", use_container_width=True):
-                st.session_state.image_analyzed = False
-                st.session_state.show_results = False
-                st.session_state.extracted_amount = 0.0
-                st.session_state.extracted_category = "Shopping (In-Store General)"
-                st.session_state.extracted_vendor = "Unknown (Manual Input)"
-                st.session_state.uploader_key += 1
-                st.rerun()
+    # Text context input
+    st.markdown("<div class='context-label'>💬 Add context about your transaction (optional):</div>", unsafe_allow_html=True)
+
+    # Speech-to-text button
+    speech_result = speech_to_text_button(key="speech_btn")
+
+    # If speech captured, append to user context
+    if speech_result and speech_result != st.session_state.get('_last_speech', ''):
+        st.session_state._last_speech = speech_result
+        current = st.session_state.user_context
+        separator = ". " if current.strip() else ""
+        st.session_state.user_context = current + separator + speech_result
+
+    # Text area for typed/dictated context
+    user_context = st.text_area(
+        "Describe the transaction (e.g., 'Uber ride to airport, HK$150')",
+        value=st.session_state.user_context,
+        height=80,
+        key="context_input",
+        label_visibility="collapsed"
+    )
+    st.session_state.user_context = user_context
+
+    # Action buttons
+    col_analyze, col_clear = st.columns(2)
+    with col_analyze:
+        analyze_disabled = not uploaded_files and not user_context.strip()
+        if st.button("✨ Analyze with Gemini AI", use_container_width=True, disabled=analyze_disabled):
+            # Collect all images
+            images = []
+            if uploaded_files:
+                for f in uploaded_files:
+                    f.seek(0)  # Reset file position for re-read
+                    images.append(Image.open(f))
+
+            with st.spinner(f"Analyzing {len(images)} image(s) + context with Gemini..."):
+                extraction = parse_transaction(images, user_context)
+
+            if "error" in extraction:
+                st.error(f"Analysis Failed: {extraction['error']}")
+            else:
+                st.success("✅ Extraction Complete!")
+                st.session_state.extracted_vendor = extraction.get("vendor", "Unknown")
+                st.session_state.extracted_amount = float(extraction.get("amount", 0.0))
+                st.session_state.extracted_category = extraction.get("category", "Shopping (In-Store General)")
+                st.session_state.image_analyzed = True
+
+    with col_clear:
+        if st.button("🗑️ Clear All", use_container_width=True):
+            st.session_state.image_analyzed = False
+            st.session_state.show_results = False
+            st.session_state.extracted_amount = 0.0
+            st.session_state.extracted_category = "Shopping (In-Store General)"
+            st.session_state.extracted_vendor = "Unknown (Manual Input)"
+            st.session_state.user_context = ""
+            st.session_state._last_speech = ""
+            st.session_state.uploader_key += 1
+            st.rerun()
 
     # Display successful extraction stats
     if st.session_state.image_analyzed:
@@ -216,7 +248,7 @@ with right_col:
         form_amount = st.number_input("Amount (HK$)", min_value=0.0, value=default_amt, step=10.0, format="%.2f")
 
         submit_calculation = st.form_submit_button("💳 Calculate Best Card", use_container_width=True)
-        
+
         if submit_calculation:
             st.session_state.final_category = form_category
             st.session_state.final_amount = form_amount
@@ -226,18 +258,18 @@ with right_col:
     if st.session_state.show_results and st.session_state.final_amount > 0:
         st.markdown("---")
         results = get_recommendations(
-            st.session_state.final_category, 
+            st.session_state.final_category,
             st.session_state.final_amount
         )
-        
+
         st.subheader("Card Recommendations")
-        
+
         # Render Best Card
         best = results[0]
         best_html = f"""
         <div class="best-card">
             <div class="card-title">
-                🏆 {best['card']} 
+                🏆 {best['card']}
                 <span class="badge-winner">Best Choice</span>
             </div>
             <div class="miles-highlight">+{best['miles']} Miles</div>
@@ -246,7 +278,7 @@ with right_col:
         </div>
         """
         st.markdown(best_html, unsafe_allow_html=True)
-        
+
         # Render alternative cards
         if len(results) > 1:
             st.markdown("#### Alternative Cards")
