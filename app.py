@@ -91,49 +91,23 @@ st.markdown("""
     }
     @keyframes rotate { 100% { transform: rotate(1turn); } }
     
-    /* CSS Credit Cards */
-    .cc-visual {
-        width: 100%; max-width: 340px; height: 200px;
-        border-radius: 16px;
-        padding: 24px;
-        display: flex; flex-direction: column; justify-content: space-between;
-        position: relative;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-        margin: 0 auto 20px auto;
-        color: white;
-        overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.1);
+    /* CSS Image Cards */
+    .card-img-wrapper {
+        text-align: center;
+        margin: 25px auto;
+        padding: 5px;
     }
-    .cc-visual::after {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 40%);
-        pointer-events: none;
+    .card-img {
+        max-width: 100%;
+        max-height: 220px;
+        border-radius: 14px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.7), 0 0 25px rgba(0, 242, 254, 0.4);
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
     }
-    .chip {
-        width: 45px; height: 35px; border-radius: 6px;
-        background: linear-gradient(135deg, #eccc68, #ffa502);
-        box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-        position: relative;
+    .card-img:hover {
+        transform: scale(1.04) translateY(-8px);
+        box-shadow: 0 25px 45px rgba(0,0,0,0.9), 0 0 40px rgba(0, 242, 254, 0.7);
     }
-    .chip::after {
-        content: ''; position: absolute; top: 10px; bottom: 10px; left: 0; right: 0;
-        border-top: 1px solid rgba(0,0,0,0.2); border-bottom: 1px solid rgba(0,0,0,0.2);
-    }
-    .cc-logo { font-size: 26px; font-weight: 900; font-style: italic; text-align: right; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-    .cc-mc { 
-        width: 50px; height: 30px; position: relative; margin-left: auto;
-    }
-    .cc-mc::before, .cc-mc::after {
-        content: ''; position: absolute; width: 30px; height: 30px; border-radius: 50%; opacity: 0.9;
-    }
-    .cc-mc::before { background: #ff5f00; left: 0; }
-    .cc-mc::after { background: #eb001b; right: 20px; }
-    
-    /* Card specific backgrounds matching the AI ad vibe */
-    .bg-sc { background: linear-gradient(135deg, #bfa85c 0%, #006b5f 100%); }
-    .bg-em { background: linear-gradient(135deg, #111 0%, #2b323c 100%); border: 1px solid #00f2fe; }
-    .bg-red { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
-    .bg-sig { background: linear-gradient(135deg, #d4af37 0%, #f1c40f 100%); color: #111; }
     
     .miles-glow {
         text-align: center; font-size: 3.5rem; font-weight: 900;
@@ -252,4 +226,93 @@ with left_col:
             st.session_state.extracted_vendor = "Unknown (Manual Input)"
             st.session_state.user_context = ""
             st.session_state._last_speech = ""
-            st.session_state.uploade
+            st.session_state.uploader_key += 1
+            st.session_state.context_key += 1  # Force fresh text area widget
+            st.rerun()
+
+    # Display successful extraction stats
+    if st.session_state.image_analyzed:
+        st.markdown("##### Extracted Data")
+        col_v, col_a = st.columns(2)
+        col_v.metric("Vendor", st.session_state.extracted_vendor)
+        col_a.metric("Amount", f"HK$ {st.session_state.extracted_amount:.2f}")
+        st.metric("Mapped Category", st.session_state.extracted_category)
+
+
+with right_col:
+    # --- Manual Override Form ---
+    st.subheader("2. Final Transaction Details")
+    with st.form(key="transaction_form"):
+        cat_search = st.session_state.extracted_category
+        cat_idx = CATEGORIES.index(cat_search) if cat_search in CATEGORIES else 0
+        form_category = st.selectbox("Spending Category (Can override AI)", CATEGORIES, index=cat_idx)
+
+        default_amt = st.session_state.extracted_amount if st.session_state.extracted_amount > 0 else 100.0
+        form_amount = st.number_input("Amount (HK$)", min_value=0.0, value=default_amt, step=10.0, format="%.2f")
+
+        submit_calculation = st.form_submit_button("💳 Calculate Best Card", use_container_width=True)
+
+        if submit_calculation:
+            st.session_state.final_category = form_category
+            st.session_state.final_amount = form_amount
+            st.session_state.show_results = True
+
+    # --- Execution & Results ---
+    if st.session_state.show_results and st.session_state.final_amount > 0:
+        st.markdown("---")
+        results = get_recommendations(
+            st.session_state.final_category,
+            st.session_state.final_amount
+        )
+
+        st.subheader("Card Recommendations")
+
+        # UI Logic to map card type to visual styles
+        def get_card_vibe(card_name):
+            if "SC Cathay" in card_name: return "https://www.cathaypacific.com/content/dam/focal-point/digital-library/hk/sc-cx-mastercard/sc-card-face-w.renditionimage.1600.1600.jpg"
+            if "EveryMile" in card_name: return "https://photos-hk.cdn-moneysmart.com/credit_cards/uploads/products/images/image_url_2023-03-03_hsbc-everymile-card_11zon.png"
+            if "Red" in card_name: return "https://www.hsbc.com.hk/content/dam/hsbc/hk/images/mass/credit-cards/tile-16-9/9358-hsbc-red-credit-card-1280x828.jpg"
+            if "Signature" in card_name: return "https://www.hsbc.com.hk/content/dam/hsbc/hk/images/mass/credit-cards/tile-16-9/9358-hsbc-visa-signature-card-1280x828.jpg"
+            return "https://www.cathaypacific.com/content/dam/focal-point/digital-library/hk/sc-cx-mastercard/sc-card-face-w.renditionimage.1600.1600.jpg"
+
+        best = results[0]
+        img_url = get_card_vibe(best['card'])
+        
+        best_html = f"""
+<div class="hologram-container">
+<div style="text-align: center;">
+<span class="badge-winner">AI Optimal Recommendation</span>
+</div>
+
+<div class="card-img-wrapper">
+<img src="{img_url}" class="card-img" alt="{best['card']}">
+</div>
+
+<div class="miles-glow">+{best['miles']} MILES</div>
+<div style="text-align: center;">
+<div class="rate-text">Effective Rate: HK${best['rate']} = 1 Mile</div>
+<div class="notes-text" style="color: #00f2fe; margin-top: 5px;">🤖 {best['notes']}</div>
+</div>
+</div>
+"""
+        st.markdown(best_html, unsafe_allow_html=True)
+
+        # Render alternative cards
+        if len(results) > 1:
+            st.markdown("#### Alternative Cards")
+            for res in results[1:]:
+                other_html = f"""
+<div class="other-card">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<div>
+<div style="font-weight: 600; color: #e2e8f0; font-size: 1rem;">{res['card']}</div>
+<div class="notes-text">{res['notes']}</div>
+</div>
+<div style="text-align: right;">
+<div style="color: #00f2fe; font-weight: 700; font-size: 1.2rem; text-shadow: 0 0 10px rgba(0,242,254,0.4);">+{res['miles']}</div>
+<div style="font-size: 0.75rem; color: #94a3b8;">HK${res['rate']} = 1 Mile</div>
+</div>
+</div>
+</div>
+"""
+                st.markdown(other_html, unsafe_allow_html=True)
