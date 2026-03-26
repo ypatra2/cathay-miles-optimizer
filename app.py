@@ -217,6 +217,9 @@ with left_col:
             st.session_state.extracted_vendor = "Unknown (Manual Input)"
             st.session_state.user_context = ""
             st.session_state._last_speech = ""
+            # Clear widget cached values so text area resets
+            if 'context_input' in st.session_state:
+                del st.session_state['context_input']
             st.session_state.uploader_key += 1
             st.rerun()
 
