@@ -171,4 +171,25 @@ def parse_transaction(images: List, user_context: str = "") -> Dict[str, Any]:
                 return {"error": "Google Gemini API is geo-blocked. Make sure your VPN is routing Terminal/Python traffic!"}
             if "not found" in error_msg:
                 return {"error": f"Model not found via API. Raw: {error_msg}"}
-            return {"error": f"API Err
+            return {"error": f"API Error {response.status_code}: {error_msg}"}
+
+        data = response.json()
+        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        result = json.loads(raw_text)
+
+        # Apply vendor overrides: verified mapping beats AI guess
+        from vendor_overrides import get_vendor_override
+        vendor_name = result.get("vendor", "")
+        override = get_vendor_override(vendor_name)
+        if override:
+            result["category"] = override
+
+        # Validation Fallback
+        if result.get("category") not in VALID_CATEGORIES:
+            result["category"] = "Shopping (In-Store General)"
+
+        return result
+    except json.JSONDecodeError:
+        return {"error": "Failed to decode Gemini response into JSON."}
+    except Exception as e:
+        return {"error": str(e)}

@@ -47,3 +47,92 @@ def log_transaction(vendor, category, amount, recommended_card, miles_earned):
     if not amount:
         amount = 0.0
     
+    timestamp = datetime.now().isoformat()
+    
+    # 1. Try Supabase
+    client = get_supabase_client()
+    if client:
+        try:
+            data = {
+                "timestamp": timestamp,
+                "vendor": vendor,
+                "category": category,
+                "amount": float(amount),
+                "recommended_card": recommended_card,
+                "miles_earned": int(miles_earned)
+            }
+            client.table("transactions").insert(data).execute()
+            return
+        except Exception as e:
+            print(f"Supabase log failed, falling back to SQLite: {e}")
+
+    # 2. Fallback to SQLite
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO transactions (timestamp, vendor, category, amount, recommended_card, miles_earned)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (timestamp, vendor, category, amount, recommended_card, miles_earned))
+    conn.commit()
+    conn.close()
+
+def fetch_all_transactions():
+    # 1. Try Supabase
+    client = get_supabase_client()
+    if client:
+        try:
+            response = client.table("transactions").select("*").order("timestamp", desc=True).execute()
+            df = pd.DataFrame(response.data)
+            if not df.empty:
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+            return df
+        except Exception as e:
+            print(f"Supabase fetch failed, falling back to SQLite: {e}")
+
+    # 2. Fallback to SQLite
+    conn = sqlite3.connect(DB_NAME)
+    try:
+        df = pd.read_sql_query("SELECT * FROM transactions ORDER BY timestamp DESC", conn)
+    except:
+        df = pd.DataFrame()
+    conn.close()
+    if not df.empty:
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+    return df
+
+def delete_transaction(tx_id):
+    # 1. Try Supabase
+    client = get_supabase_client()
+    if client:
+        try:
+            # tx_id might be string from DataFrame or int
+            client.table("transactions").delete().eq("id", tx_id).execute()
+            return
+        except Exception as e:
+            print(f"Supabase delete failed: {e}")
+
+    # 2. Fallback to SQLite
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM transactions WHERE id = ?", (tx_id,))
+    conn.commit()
+    conn.close()
+
+def delete_all_transactions():
+    # 1. Try Supabase
+    client = get_supabase_client()
+    if client:
+        try:
+            # Delete all rows (requires where clause in Supabase usually, or use RPC)
+            # In Supabase UI, you'd usually enable 'allow destructive' or use a catch-all filter
+            client.table("transactions").delete().neq("vendor", "FORCE_DELETE_ALL_MAGIC_STRING_123").execute()
+            return
+        except Exception as e:
+            print(f"Supabase nuke failed: {e}")
+
+    # 2. Fallback to SQLite
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM transactions")
+    conn.commit()
+    conn.close()

@@ -243,4 +243,190 @@ def render_optimizer():
         uploaded_files = st.file_uploader(
             "Upload receipts, checkout screens, or bills (multiple allowed)...",
             type=["png", "jpg", "jpeg"],
-           
+            accept_multiple_files=True,
+            key=f"uploader_{st.session_state.uploader_key}"
+        )
+
+        if uploaded_files:
+            st.session_state.uploaded_images = [Image.open(f) for f in uploaded_files]
+
+        if st.session_state.uploaded_images:
+            cols = st.columns(min(len(st.session_state.uploaded_images), 3))
+            for i, img in enumerate(st.session_state.uploaded_images):
+                with cols[i % 3]:
+                    st.image(img, use_container_width=True)
+
+        st.markdown("<div style='margin-top:15px; font-weight:600;'>💬 Add context about your transaction (optional):</div>", unsafe_allow_html=True)
+        user_context = st.text_area(
+            "Describe the transaction (e.g., 'Uber ride to airport, HK$150')",
+            value=st.session_state.user_context,
+            height=80,
+            key=f"context_{st.session_state.context_key}",
+            label_visibility="collapsed"
+        )
+        st.session_state.user_context = user_context
+
+        speech_to_text_button(reset_key=st.session_state.context_key)
+
+        col_analyze, col_clear = st.columns(2)
+        with col_analyze:
+            analyze_disabled = not uploaded_files and not user_context.strip()
+            if st.button("✨ Analyze with Gemini AI", use_container_width=True, disabled=analyze_disabled):
+                images = []
+                if uploaded_files:
+                    for f in uploaded_files:
+                        f.seek(0)
+                        images.append(Image.open(f))
+                with st.spinner(f"Analyzing {len(images)} image(s) + context with Gemini..."):
+                    extraction = parse_transaction(images, user_context)
+
+                if "error" in extraction:
+                    st.error(f"Analysis Failed: {extraction['error']}")
+                else:
+                    st.success("✅ Extraction Complete!")
+                    st.session_state.extracted_vendor = extraction.get("vendor", "Unknown")
+                    st.session_state.extracted_amount = float(extraction.get("amount", 0.0))
+                    st.session_state.extracted_category = extraction.get("category", "Shopping (In-Store General)")
+                    st.session_state.image_analyzed = True
+
+        with col_clear:
+            if st.button("🗑️ Clear All", use_container_width=True):
+                st.session_state.image_analyzed = False
+                st.session_state.show_results = False
+                st.session_state.extracted_amount = 0.0
+                st.session_state.extracted_category = "Shopping (In-Store General)"
+                st.session_state.extracted_vendor = "Unknown (Manual Input)"
+                st.session_state.user_context = ""
+                st.session_state.uploaded_images = []
+                st.session_state._last_speech = ""
+                st.session_state.uploader_key += 1
+                st.session_state.context_key += 1
+                st.session_state.transaction_logged = False
+                st.session_state.log_success = False
+                st.rerun()
+
+        if st.session_state.image_analyzed:
+            st.markdown("##### Extracted Data")
+            col_v, col_a = st.columns(2)
+            col_v.metric("Vendor", st.session_state.extracted_vendor)
+            col_a.metric("Amount", f"HK$ {st.session_state.extracted_amount:.2f}")
+            st.metric("Mapped Category", st.session_state.extracted_category)
+
+    with right_col:
+        st.subheader("2. Final Transaction Details")
+        with st.form(key="transaction_form"):
+            cat_search = st.session_state.extracted_category
+            cat_idx = CATEGORIES.index(cat_search) if cat_search in CATEGORIES else 0
+            form_category = st.selectbox("Spending Category (Can override AI)", CATEGORIES, index=cat_idx)
+            default_amt = st.session_state.extracted_amount if st.session_state.extracted_amount > 0 else 100.0
+            form_amount = st.number_input("Amount (HK$)", min_value=0.0, value=default_amt, step=10.0, format="%.2f")
+            submit_calculation = st.form_submit_button("💳 Calculate Best Card", use_container_width=True)
+
+            if submit_calculation:
+                st.session_state.final_category = form_category
+                st.session_state.final_amount = form_amount
+                st.session_state.show_results = True
+                st.session_state.transaction_logged = False
+                st.session_state.log_success = False
+
+        if st.session_state.show_results and st.session_state.final_amount > 0:
+            st.markdown("---")
+            results = get_recommendations(
+                st.session_state.final_category,
+                st.session_state.final_amount
+            )
+            st.subheader("Card Recommendations")
+
+            import base64
+            import os
+            def get_local_b64(path):
+                if os.path.exists(path):
+                    with open(path, "rb") as f:
+                        return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+                return "https://www.cathaypacific.com/content/dam/focal-point/digital-library/hk/sc-cx-mastercard/sc-card-face-w.renditionimage.1600.1600.jpg"
+
+            def get_card_vibe(card_name):
+                if "SC Cathay" in card_name: return get_local_b64("assets/sc_cathay_cropped.png")
+                if "EveryMile" in card_name: return "https://photos-hk.cdn-moneysmart.com/credit_cards/uploads/products/images/image_url_2023-03-03_hsbc-everymile-card_11zon.png"
+                if "Red" in card_name: return "https://www.hsbc.com.hk/content/dam/hsbc/hk/images/mass/credit-cards/tile-16-9/9358-hsbc-red-credit-card-1280x828.jpg"
+                if "Signature" in card_name: return "https://www.hsbc.com.hk/content/dam/hsbc/hk/images/mass/credit-cards/tile-16-9/9358-hsbc-visa-signature-card-1280x828.jpg"
+                return get_local_b64("assets/sc_cathay_cropped.png")
+
+            best = results[0]
+            img_url = get_card_vibe(best['card'])
+            
+            # Log to Database removed from automatic flow
+            # db_manager.log_transaction(st.session_state.extracted_vendor, st.session_state.final_category, st.session_state.final_amount, best['card'], best['miles'])
+
+            best_html = f"""
+<div class="hologram-container">
+<div style="text-align: center;">
+<span class="badge-winner">AI Optimal Recommendation</span>
+</div>
+<div class="card-img-wrapper">
+<img src="{img_url}" class="card-img" alt="{best['card']}">
+</div>
+<div class="miles-glow">+{best['miles']} MILES</div>
+<div style="text-align: center;">
+<div class="rate-text">Effective Rate: HK${best['rate']} = 1 Mile</div>
+<div class="notes-text" style="color: #00f2fe; margin-top: 5px;">🤖 {best['notes']}</div>
+</div>
+</div>
+"""
+            st.markdown(best_html, unsafe_allow_html=True)
+
+            # --- PAY NOW ACTION ---
+            if not st.session_state.transaction_logged:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("💸 PAY NOW & LOG TRANSACTION", use_container_width=True, type="primary"):
+                    db_manager.log_transaction(
+                        st.session_state.extracted_vendor, 
+                        st.session_state.final_category, 
+                        st.session_state.final_amount, 
+                        best['card'], 
+                        best['miles']
+                    )
+                    st.session_state.transaction_logged = True
+                    st.session_state.log_success = True
+                    st.rerun()
+            
+            if st.session_state.log_success:
+                st.success(f"Successfully logged {best['miles']} miles to your Dashboard ledger!")
+
+            if len(results) > 1:
+                st.markdown("#### Alternative Cards")
+                for res in results[1:]:
+                    other_html = f"""
+<div class="other-card">
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<div>
+<div style="font-weight: 600; color: #e2e8f0; font-size: 1rem;">{res['card']}</div>
+<div class="notes-text">{res['notes']}</div>
+</div>
+<div style="text-align: right;">
+<div style="color: #00f2fe; font-weight: 700; font-size: 1.2rem; text-shadow: 0 0 10px rgba(0,242,254,0.4);">+{res['miles']}</div>
+<div style="font-size: 0.75rem; color: #94a3b8;">HK${res['rate']} = 1 Mile</div>
+</div>
+</div>
+</div>
+"""
+                    st.markdown(other_html, unsafe_allow_html=True)
+
+# --- ROUTING LOGIC ---
+with st.sidebar:
+    st.markdown("<div style='text-align: center; padding: 10px 0;'><h2 style='color:#00f2fe; margin-bottom:0;'>Cathay Miles</h2><p style='color:#94a3b8; font-size:0.8rem;'>VAULT EDITION v4.0</p></div>", unsafe_allow_html=True)
+    
+    # DB Status Indicator
+    if db_manager.USE_SUPABASE:
+        st.markdown("<div style='background:rgba(0,242,254,0.1); border:1px solid rgba(0,242,254,0.3); border-radius:10px; padding:8px; text-align:center; margin-bottom:15px;'><span style='color:#00f2fe;'>●</span> <span style='font-size:0.85rem; color:#e2e8f0;'>CLOUD SYNC ACTIVE</span></div>", unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:8px; text-align:center; margin-bottom:15px;'><span style='color:#ef4444;'>●</span> <span style='font-size:0.85rem; color:#e2e8f0;'>LOCAL STORAGE ONLY</span></div>", unsafe_allow_html=True)
+
+    page = st.radio("Navigation", ["💳 Optimizer Engine", "📊 Analytics Dashboard"])
+    st.markdown("---")
+    st.info("💡 **Pro Tip:** Use the 'Pay Now' button to save transactions for long-term tracking.")
+
+if page == "💳 Optimizer Engine":
+    render_optimizer()
+else:
+    render_dashboard()
