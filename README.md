@@ -56,6 +56,36 @@ streamlit run app.py
 
 ## Architecture
 
+```mermaid
+graph TD
+    %% Styling
+    classDef user fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#fff,rx:8px,ry:8px;
+    classDef ui fill:#00b2a9,stroke:#008b84,stroke-width:2px,color:#fff,rx:8px,ry:8px;
+    classDef api fill:#e2e8f0,stroke:#cbd5e1,stroke-width:2px,color:#1e293b,rx:8px,ry:8px;
+    classDef engine fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff,rx:8px,ry:8px;
+    classDef result fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff,rx:8px,ry:8px;
+
+    %% Workflow
+    A[👤 User Input<br/>Receipts, Voice, Text]:::user --> B(📱 Streamlit Frontend<br/>app.py):::ui
+    
+    subgraph AI Extraction
+        B -- "Multimodal Data" --> C{🤖 Gemini 1.5 Flash<br/>gemini_parser.py}:::api
+        C -- "Extracts" --> D[📄 Raw JSON<br/>Vendor, Amount, Best Guess]:::api
+    end
+    
+    subgraph Deterministic Engine
+        D --> E{🔍 Vendor Overrides<br/>vendor_overrides.py}:::engine
+        E -- "Verified Match" --> F[Exact Category]:::engine
+        E -- "Unknown Vendor" --> G[Fallback Array]:::engine
+        
+        F --> H((🧮 Math Engine<br/>optimizer.py)):::engine
+        G --> H
+    end
+    
+    H -- "Calculates 4 Cards × 17 Cats" --> I[🏆 Optimal Card & Miles<br/>Recommendation]:::result
+    I -- "Renders" --> B
+```
+
 ```
 app.py              → Streamlit UI (multi-image upload, voice input, results display)
 optimizer.py        → Deterministic miles calculation engine (17 categories × 4 cards)
