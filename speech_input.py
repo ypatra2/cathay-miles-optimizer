@@ -8,14 +8,16 @@ Returns transcript by directly updating the parent text area via DOM.
 import streamlit.components.v1 as components
 
 
-def speech_to_text_button():
+def speech_to_text_button(reset_key=0):
     """
     Renders a speech-to-text microphone button.
     When the user speaks, the recognized text is automatically
     inserted into the nearest Streamlit text area above via DOM manipulation.
     Also copies the transcript to clipboard as a fallback.
+    reset_key: change this value to force the component to re-render fresh.
     """
-    speech_html = """
+    # Use string concatenation instead of f-string to avoid CSS/JS brace conflicts
+    speech_html = "<!-- reset:" + str(reset_key) + """ -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -67,8 +69,8 @@ def speech_to_text_button():
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
         let isListening = false;
-        let hasInserted = false;     // Prevent duplicate insertions
-        let originalTextAreaValue = ''; // Store original value before speech
+        let hasInserted = false;
+        let originalTextAreaValue = '';
 
         const btn = document.getElementById('micBtn');
         const icon = document.getElementById('micIcon');
@@ -83,7 +85,7 @@ def speech_to_text_button():
         } else {
             recognition = new SpeechRecognition();
             recognition.continuous = false;
-            recognition.interimResults = true;  // Show live preview
+            recognition.interimResults = true;
             recognition.lang = 'en-US';
 
             recognition.onresult = function(event) {
@@ -99,7 +101,6 @@ def speech_to_text_button():
                     }
                 }
 
-                // Show live preview in transcript box (interim = italic, final = solid)
                 if (finalTranscript) {
                     transcriptBox.innerHTML = '🗣️ "' + finalTranscript + '"';
                 } else if (interimTranscript) {
@@ -107,7 +108,6 @@ def speech_to_text_button():
                 }
                 transcriptBox.classList.add('visible');
 
-                // Only insert into text area ONCE when we have the final result
                 if (finalTranscript && !hasInserted) {
                     hasInserted = true;
                     insertIntoTextArea(finalTranscript);
@@ -143,7 +143,6 @@ def speech_to_text_button():
                     });
                     if (!targetTA) targetTA = textareas[textareas.length - 1];
 
-                    // Append only the final transcript to the ORIGINAL value (not accumulated partials)
                     const separator = originalTextAreaValue.trim() ? '. ' : '';
                     const newValue = originalTextAreaValue + separator + transcript;
 
@@ -179,7 +178,6 @@ def speech_to_text_button():
             status.textContent = 'Speak now — describe your transaction';
             transcriptBox.classList.remove('visible');
 
-            // Capture the current text area value BEFORE speech starts
             try {
                 const textareas = window.parent.document.querySelectorAll('textarea');
                 let targetTA = null;

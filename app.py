@@ -184,7 +184,7 @@ with left_col:
     st.session_state.user_context = user_context
 
     # Speech-to-text button (inserts directly into text area above via DOM)
-    speech_to_text_button()
+    speech_to_text_button(reset_key=st.session_state.context_key)
 
     # Action buttons
     col_analyze, col_clear = st.columns(2)
