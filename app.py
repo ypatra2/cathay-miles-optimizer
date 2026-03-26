@@ -171,16 +171,6 @@ with left_col:
     # Text context input
     st.markdown("<div class='context-label'>💬 Add context about your transaction (optional):</div>", unsafe_allow_html=True)
 
-    # Speech-to-text button
-    speech_result = speech_to_text_button(key="speech_btn")
-
-    # If speech captured, append to user context
-    if speech_result and speech_result != st.session_state.get('_last_speech', ''):
-        st.session_state._last_speech = speech_result
-        current = st.session_state.user_context
-        separator = ". " if current.strip() else ""
-        st.session_state.user_context = current + separator + speech_result
-
     # Text area for typed/dictated context
     user_context = st.text_area(
         "Describe the transaction (e.g., 'Uber ride to airport, HK$150')",
@@ -190,6 +180,9 @@ with left_col:
         label_visibility="collapsed"
     )
     st.session_state.user_context = user_context
+
+    # Speech-to-text button (inserts directly into text area above via DOM)
+    speech_to_text_button()
 
     # Action buttons
     col_analyze, col_clear = st.columns(2)
