@@ -4,6 +4,8 @@
 
 **[Try it live →](https://cathay-miles-optimizer.streamlit.app)**
 
+![Cathay Miles Optimizer - Financial AI](assets/hero.png)
+
 ---
 
 ## What It Does
