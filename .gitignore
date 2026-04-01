@@ -31,3 +31,13 @@ docker-compose*.yml
 
 # Legacy component directory
 speech_component/
+
+# Local databases
+transactions.db
+
+# Agentic engine refresh (local fallback only)
+engine_deltas/refresh_log.json
+
+# Deep Research test scripts (keep locally)
+deep_research_test.py
+deep_research_delta_report.md

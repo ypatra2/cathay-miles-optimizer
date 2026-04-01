@@ -15,6 +15,7 @@ db_manager.init_db()
 from optimizer import CATEGORIES, get_recommendations
 from gemini_parser import parse_transaction
 from speech_input import speech_to_text_button
+from agents.refresh_metadata import get_last_refresh, get_refresh_history
 
 # --- 1. SETUP & CONFIG ---
 st.set_page_config(
@@ -412,6 +413,113 @@ def render_optimizer():
 """
                     st.markdown(other_html, unsafe_allow_html=True)
 
+# --- ENGINE REFRESH PAGE ---
+def render_engine_refresh():
+    """Renders the agentic engine refresh page."""
+    st.markdown("<div class='hologram-container'><h2 style='color:#00f2fe;'>🤖 Agentic Engine Refresh</h2><p style='color:#94a3b8;'>Deep Research Agent + Python Dev Agent pipeline powered by LangGraph</p></div>", unsafe_allow_html=True)
+
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.markdown("### How It Works")
+        st.markdown("""
+        1. 🔬 **Deep Research Agent** scans bank websites for the latest earn rates, caps, promos & MCC codes
+        2. 🧑‍💻 **Python Dev Agent** generates an updated `optimizer.py` based on verified findings
+        3. 🌿 **Git Branch + PR** is created automatically for your review on GitHub
+        4. ✅ **You merge** the PR on GitHub to apply the changes
+        """)
+
+    with col2:
+        # Show last refresh info
+        last_refresh = get_last_refresh()
+        if last_refresh:
+            refreshed_at = last_refresh.get("refreshed_at", "Unknown")
+            status = last_refresh.get("status", "unknown")
+            source = last_refresh.get("trigger_source", "unknown")
+            status_emoji = {"pr_created": "📋", "merged": "✅", "rejected": "❌", "failed": "⚠️"}.get(status, "❓")
+            st.markdown(f"""
+            <div class='glass-panel' style='text-align:center;'>
+                <p style='color:#94a3b8; margin-bottom:5px;'>Last Refresh</p>
+                <p style='color:#e2e8f0; font-size:1.1rem;'>{refreshed_at[:10] if len(refreshed_at) > 10 else refreshed_at}</p>
+                <p style='font-size:0.9rem;'>{status_emoji} {status.upper()} via {source}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='glass-panel' style='text-align:center;'><p style='color:#94a3b8;'>No refresh history found</p></div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Refresh trigger button
+    if st.button("🔬 Refresh Engine Now", type="primary", use_container_width=True):
+        st.session_state["refresh_running"] = True
+
+    if st.session_state.get("refresh_running", False):
+        progress_container = st.empty()
+        status_text = st.empty()
+        result_container = st.container()
+
+        with st.spinner("🔬 Running Agentic Pipeline... This takes 5-10 minutes."):
+            from agents.runner import run_refresh_pipeline
+
+            def streamlit_progress(step, detail):
+                status_text.markdown(f"**{detail}**")
+
+            result = run_refresh_pipeline(
+                trigger_source="manual",
+                progress_callback=streamlit_progress,
+            )
+
+        st.session_state["refresh_running"] = False
+        st.session_state["last_refresh_result"] = result
+
+    # Show results
+    result = st.session_state.get("last_refresh_result")
+    if result:
+        if result["success"]:
+            st.success("✅ Pipeline completed successfully!")
+
+            if result.get("pr_url"):
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.markdown(f"🔗 **[View PR on GitHub]({result['pr_url']})**")
+                with col_b:
+                    if result.get("branch_name"):
+                        st.markdown(f"🌿 Branch: `{result['branch_name']}`")
+
+            if result.get("pr_note"):
+                st.info(f"ℹ️ {result['pr_note']}")
+
+            if result.get("patch_summary"):
+                with st.expander("📝 Patch Summary", expanded=True):
+                    st.markdown(result["patch_summary"])
+
+            if result.get("research_report"):
+                with st.expander("🔬 Full Deep Research Report"):
+                    st.markdown(result["research_report"])
+        else:
+            st.error(f"❌ Pipeline failed: {result.get('error', 'Unknown error')}")
+            if result.get("research_report"):
+                with st.expander("🔬 Partial Research Report"):
+                    st.markdown(result["research_report"])
+
+    # Refresh history
+    st.markdown("---")
+    st.markdown("### 📜 Refresh History")
+    history = get_refresh_history(10)
+    if history:
+        history_data = []
+        for h in history:
+            history_data.append({
+                "Date": h.get("refreshed_at", "?")[:10],
+                "Source": h.get("trigger_source", "?"),
+                "Status": h.get("status", "?"),
+                "Summary": (h.get("patch_summary", "") or "")[:80],
+                "PR": h.get("pr_url", ""),
+            })
+        st.dataframe(pd.DataFrame(history_data), use_container_width=True, hide_index=True)
+    else:
+        st.caption("No refresh history yet. Click the button above to start!")
+
+
 # --- ROUTING LOGIC ---
 with st.sidebar:
     st.markdown("<div style='text-align: center; padding: 10px 0;'><h2 style='color:#00f2fe; margin-bottom:0;'>Cathay Miles</h2><p style='color:#94a3b8; font-size:0.8rem;'>VAULT EDITION v4.0</p></div>", unsafe_allow_html=True)
@@ -422,11 +530,22 @@ with st.sidebar:
     else:
         st.markdown("<div style='background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:8px; text-align:center; margin-bottom:15px;'><span style='color:#ef4444;'>●</span> <span style='font-size:0.85rem; color:#e2e8f0;'>LOCAL STORAGE ONLY</span></div>", unsafe_allow_html=True)
 
-    page = st.radio("Navigation", ["💳 Optimizer Engine", "📊 Analytics Dashboard"])
+    page = st.radio("Navigation", ["💳 Optimizer Engine", "📊 Analytics Dashboard", "🤖 Engine Refresh"])
     st.markdown("---")
     st.info("💡 **Pro Tip:** Use the 'Pay Now' button to save transactions for long-term tracking.")
 
+    # Engine Status Footer
+    last = get_last_refresh()
+    if last and last.get("refreshed_at"):
+        r_date = last["refreshed_at"][:10]
+        r_source = last.get("trigger_source", "unknown")
+        st.markdown(f"<div style='text-align:center; padding:8px; margin-top:10px; background:rgba(0,242,254,0.05); border-radius:10px; border:1px solid rgba(0,242,254,0.15);'><span style='color:#94a3b8; font-size:0.75rem;'>🔄 Engine refreshed: {r_date}<br/>Source: {r_source}</span></div>", unsafe_allow_html=True)
+    else:
+        st.markdown("<div style='text-align:center; padding:8px; margin-top:10px;'><span style='color:#64748b; font-size:0.75rem;'>🔄 Engine: No refresh history</span></div>", unsafe_allow_html=True)
+
 if page == "💳 Optimizer Engine":
     render_optimizer()
-else:
+elif page == "📊 Analytics Dashboard":
     render_dashboard()
+else:
+    render_engine_refresh()
