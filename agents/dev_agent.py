@@ -1,5 +1,5 @@
 """
-Python Dev Agent — LangGraph node that uses Gemini 2.0 Flash to generate
+Python Dev Agent — LangGraph node that uses Gemini 2.5 Flash to generate
 an updated optimizer.py based on the Deep Research delta report.
 
 Uses the google-genai SDK directly (no langchain dependency) for
@@ -41,7 +41,7 @@ After the complete Python file, on the VERY LAST LINE, add a Python comment star
 def run_dev_agent(state: dict) -> dict:
     """
     LangGraph node: Takes the research report and current engine code,
-    generates an updated optimizer.py via Gemini 2.0 Flash (REST API).
+    generates an updated optimizer.py via Gemini 2.5 Flash (REST API).
     """
     import requests
 
@@ -76,8 +76,8 @@ def run_dev_agent(state: dict) -> dict:
 Generate the complete updated optimizer.py incorporating ALL verified changes from the delta report above. Follow the rules in your system prompt exactly. Output ONLY the Python code.
 """
 
-    # ── Call Gemini 2.0 Flash via REST API ───────────────────────
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    # ── Call Gemini 2.5 Flash via REST API ───────────────────────
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = {
         "system_instruction": {
             "parts": [{"text": SYSTEM_PROMPT}]
