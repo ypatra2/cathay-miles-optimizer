@@ -118,13 +118,10 @@ def calculate_miles(card, category, amount):
         elif category == "Insurance / Utilities / Tax":
             rate = 12.5
             notes = "Online bill payments earn only 0.4% base rate (HK$12.5=1mi)."
-        # DELTA: Travel Booking (Designated OTA) removed from HK$2=1mi tier (cite: 2)
-        elif category == "Travel Booking (Designated OTA)":
-            rate = 5.0 # DELTA: Klook/KKday are NOT EveryMile designated, default to base rate (cite: 2)
-            notes = "Travel Booking (Designated OTA) not EveryMile designated, earns base HK$5=1 mile."
-        elif category == "EveryMile Designated Everyday":
+        # FIX: Klook/KKday explicitly confirmed as designated merchants in 2025_03 terms
+        elif category in ["Travel Booking (Designated OTA)", "EveryMile Designated Everyday"]:
             rate = 2.0
-            notes = "EveryMile designated merchant: HK$2=1 mile."
+            notes = "EveryMile designated merchant (including Klook/KKday): HK$2=1 mile."
         # DELTA: Overseas (Physical) with complex cap logic (cite: 3)
         elif category == "Overseas (Physical)":
             # DELTA: Overseas promo with HK$12K threshold and HK$15K cap (cite: 3)
