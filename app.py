@@ -508,8 +508,12 @@ def render_engine_refresh():
     if history:
         history_data = []
         for h in history:
+            # Format the ISO timestamp to YYYY-MM-DD HH:MM
+            raw_time = h.get("refreshed_at", "?")
+            formatted_time = raw_time.replace("T", " ")[:16] if raw_time != "?" else "?"
+            
             history_data.append({
-                "Date": h.get("refreshed_at", "?")[:10],
+                "Timestamp": formatted_time,
                 "Source": h.get("trigger_source", "?"),
                 "Status": h.get("status", "?"),
                 "Summary": (h.get("patch_summary", "") or "")[:80],
