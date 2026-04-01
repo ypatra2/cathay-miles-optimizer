@@ -144,6 +144,17 @@ Generate the complete updated optimizer.py incorporating ALL verified changes fr
 
             # Validate: try to compile the generated code
             try:
+                # Basic structural verification first
+                if "def get_recommendations" not in cleaned:
+                    raise SyntaxError("Function 'get_recommendations' is missing. You MUST preserve ALL existing functions!")
+                if "def calculate_miles" not in cleaned:
+                    raise SyntaxError("Function 'calculate_miles' is missing. You MUST preserve ALL existing functions!")
+                if "CARDS = [" not in cleaned and "CARDS =" not in cleaned:
+                    raise SyntaxError("The 'CARDS' list is missing. You MUST preserve the CARDS list!")
+                if "CATEGORIES = [" not in cleaned and "CATEGORIES =" not in cleaned:
+                    raise SyntaxError("The 'CATEGORIES' list is missing. You MUST preserve the CATEGORIES list!")
+
+                # Test actual syntactical parse
                 compile(cleaned, "optimizer.py", "exec")
             except SyntaxError as e:
                 # Save the failed patch for debugging

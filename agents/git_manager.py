@@ -97,7 +97,8 @@ def create_refresh_branch(proposed_code: str, delta_report: str) -> dict:
             "error": str(e),
         }
     finally:
-        # Always return to main
+        # Always clean up any dirty state and return to main
+        _run_git(["reset", "--hard", "HEAD"], cwd=project_root)
         _run_git(["checkout", "main"], cwd=project_root)
 
 
