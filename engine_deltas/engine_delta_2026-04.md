@@ -1,277 +1,222 @@
 # Cathay Miles Engine — Deep Research Delta Report
-
 ## Date: March 2026
 
-### Executive Summary and Key Findings
+**Executive Summary and Key Findings**
+The optimization of Asia Miles accrual via Hong Kong credit cards requires an intricate understanding of constantly shifting bank policies, Merchant Category Codes (MCC), and promotional tiers. Based on exhaustive research into the March 2026 landscape of the four target credit cards (Standard Chartered Cathay Mastercard, HSBC EveryMile VISA, HSBC Red Mastercard, and HSBC VISA Signature), several critical updates must be injected into the existing Python calculation engine. 
 
-*   **SC Cathay Online Rate Correction:** The engine currently assumes a flat HK$6=1 mile for general online spending. Research confirms SC Cathay actually earns an elevated HK$4=1 mile for eligible online retail transactions [cite: 1]. 
-*   **The EveryMile Supermarket Trap:** The HSBC EveryMile card explicitly penalizes supermarket spending, reducing the earn rate from the base 1% RewardCash (RC) down to a mere 0.4% RC. This yields an abysmal HK$12.5=1 mile [cite: 2, 3]. Your engine currently defaults this to the HK$5=1 mile category, which is a critical over-calculation.
-*   **The Great E-Wallet Nerf (2025):** The era of passive mile generation via e-wallets is officially over. As of July 1, 2025, HSBC entirely eliminated RewardCash earning for PayMe top-ups [cite: 4]. SC Cathay has strictly excluded PayMe, AlipayHK, and WeChat Pay from its eligible transaction definitions [cite: 5, 6]. 
-*   **Hard Spending Caps:** The HSBC Red card's 4% online rate is strictly capped at HK$10,000 per month, and its 8% designated merchant rate is capped at HK$1,250 per month [cite: 7, 8]. The HSBC VISA Signature Red Hot Rewards 5X multiplier is hard-capped at HK$100,000 per year [cite: 8, 9]. The engine currently does not track these accumulation thresholds, risking severe theoretical over-estimation for high spenders.
-
-The landscape of Hong Kong credit card rewards is highly dynamic, characterized by frequent unannounced revisions to Merchant Category Code (MCC) processing and restrictive promotional thresholds. While the foundational logic of your existing Python calculation engine is sound, it suffers from several critical rate inaccuracies, glaring omissions of zero-earn ("nerfed") transaction categories, and a lack of threshold awareness. This Delta Report synthesizes recent banking terms, active 2026 promotional frameworks, and MCC coding realities to provide the exact logic necessary to patch the calculation engine. The evidence leans heavily toward banks aggressively closing loopholes (such as e-wallets and tax payments) while shifting bonus structures toward distinct, highly regulated online and travel categories.
+The evidence leans toward a broader industry crackdown on "passive" or "low-margin" spending categories. E-wallets (PayMe, AlipayHK, WeChat Pay) are now universally excluded from basic mileage accrual across the board. Furthermore, significant shifts have occurred in the definition of "Dining"—specifically, food delivery applications (Keeta, Foodpanda, Deliveroo) are aggressively filtered out of dining multipliers by banks like HSBC. Additionally, we see a structural pivot in overseas spending rewards; for instance, the HSBC Travel Guru programme now exclusively targets *physical* overseas spending, entirely nullifying online foreign currency transactions from its highest bonus tiers. Consequently, your Python engine requires structural updates to differentiate between physical and online overseas spend, as well as the immediate correction of the Standard Chartered Cathay Mastercard's online spending rate, which has reverted to the base rate rather than the premium tier.
 
 ---
 
-## 🔄 RATE CHANGES (vs current engine)
+## 1. 🔄 RATE CHANGES (vs current engine)
 
-The following tables and analyses highlight the exact discrepancies between your current Python source code and the verified 2026 banking terms.
+The current state of your calculation engine contains several inaccuracies based on recent policy shifts and updated Terms & Conditions from the issuing banks. The following table highlights the exact Deltas that must be corrected.
 
-| Card | Category | Old Rate (Engine) | New Rate (Verified) | Source |
-|------|----------|-------------------|---------------------|--------|
-| **Standard Chartered Cathay** | `Online General` | HK$6.0 = 1 mi | **HK$4.0 = 1 mi** | [cite: 1, 10] |
-| **HSBC EveryMile** | `Shopping (Supermarkets)` *New* | HK$5.0 = 1 mi (Base) | **HK$12.5 = 1 mi** | [cite: 2, 3] |
-| **HSBC Red** | `PayMe / E-wallets` *New* | HK$25.0 = 1 mi (Base) | **0 mi (Excluded)** | [cite: 4] |
-| **HSBC VISA Signature** | `PayMe / E-wallets` *New* | HK$25.0 = 1 mi (Base) | **0 mi (Excluded)** | [cite: 4] |
-| **HSBC EveryMile** | `PayMe / E-wallets` *New* | HK$12.5 = 1 mi (Base) | **0 mi (Excluded)** | [cite: 4] |
+| Card | Category | Old Rate (HK$/mi) | New Rate (HK$/mi) | Source |
+|------|----------|-------------------|-------------------|--------|
+| **SC Cathay Mastercard** | Online General | 4.0 | **6.0** | [cite: 1, 2] |
+| **SC Cathay Mastercard** | Food Delivery | 4.0 | **6.0** | [cite: 1, 2] |
+| **SC Cathay Mastercard** | Travel Booking (OTA) | 4.0 | **6.0** | [cite: 1, 2] |
+| **SC Cathay Mastercard** | Ride-Hailing (Uber) | 4.0 | **6.0** | [cite: 1, 2] |
+| **HSBC Red Mastercard** | Supermarkets | 25.0 | **25.0** (Confirmed) | [cite: 3, 4] |
+| **HSBC VISA Signature** | Food Delivery | 2.78 (Dining) | **25.0** (Base) | [cite: 5] |
 
-### Detailed Analysis of Rate Corrections
+### Analytical Context for Rate Changes
+**Standard Chartered Cathay Mastercard:** The previous assumption in the engine that "Online General" and its derivatives (Food Delivery, Ride-Hailing, OTAs) earn HK$4 = 1 mile is fundamentally incorrect for the current period. Official Standard Chartered documentation strictly limits the HK$4 = 1 mile accelerated rate to *Dining*, *Hotels*, and *Overseas* categories [cite: 1, 2]. All other eligible spending in Hong Kong dollars, including online retail, reverts to the base rate of HK$6 = 1 mile [cite: 1, 2]. 
 
-**Standard Chartered Cathay Mastercard (Online Spending):** 
-Your current engine places "Online General" into the default `else` block, assigning it a rate of HK$6=1 mile. This is mathematically incorrect. Standard Chartered official terms dictate that eligible online spending earns up to 2,000 basic miles for every HK$8,000 spent, which directly translates to **HK$4 = 1 Asia Mile** [cite: 1]. This elevated rate applies to general e-commerce, making the SC Cathay card highly competitive for non-travel online purchases alongside the HSBC Red card.
-
-**HSBC EveryMile (The Supermarket Exclusion):**
-Your engine currently allows supermarket spending to fall into the general local spending catch-all (`rate = 5.0`). However, HSBC explicitly classifies supermarkets as "other eligible transactions" rather than everyday spending. Consequently, supermarket transactions on the EveryMile card earn only the base 0.4% RewardCash rebate, rather than the 1% general retail rate [cite: 2, 3]. At the EveryMile conversion rate of $1 RC = 20 miles, 0.4% yields an effective rate of **HK$12.5 = 1 mile**. This is a trap that catches many consumers off guard, and the engine must explicitly isolate this category [cite: 2].
+**HSBC VISA Signature:** The engine previously grouped "Food Delivery" into general dining logic. Research clearly indicates that third-party delivery aggregators (Keeta, Foodpanda) are assigned distinct MCCs (often 5814 Fast Food or a distinct delivery code) that bypass the standard 5812 Dining MCC required to trigger HSBC's Red Hot Rewards "Dining" multiplier [cite: 5]. As such, these transactions fall to the base 0.4% RewardCash (RC) rate, equivalent to HK$25 = 1 mile [cite: 5].
 
 ---
 
-## ➕ MISSING CATEGORIES TO ADD
+## 2. ➕ MISSING CATEGORIES TO ADD
 
-To ensure the engine is exhaustively accurate, you must expand the `CATEGORIES` array to include the following distinct transaction types, as banks have explicitly carved them out for reduced or zero earning.
+To accurately model the real-world spending habits of a Hong Kong consumer in 2026, the `CATEGORIES` array in your engine must be expanded. 
 
-| Card | Category | Rate (HKD/Mile) | Cap / Limit | Notes |
-|------|----------|------------------|-------------|-------|
-| **All Cards** | `Supermarkets` | *Varies* | N/A | **EveryMile:** HK$12.5/mi (0.4%) [cite: 2, 3]. **Red:** HK$25/mi in-store. **SC Cathay:** HK$6/mi [cite: 1]. |
-| **All Cards** | `E-Wallets (PayMe/Alipay/WeChat)` | **0** | N/A | SC Cathay excludes all P2P/E-wallet top-ups [cite: 5, 6]. HSBC ceased RewardCash for PayMe on July 1, 2025 [cite: 4]. |
-| **All Cards** | `Insurance Premiums` | **0** or *Low* | N/A | **SC Cathay:** 0 (Excluded) [cite: 6, 11]. **HSBC:** HK$12.5/mi (EveryMile) or HK$25/mi (Red/VS) via online bill pay, often 0 if paid directly depending on MCC [cite: 12, 13]. |
-| **All Cards** | `Utilities & Bills` | **0** or *Low* | N/A | **SC Cathay:** 0 for online bill payment [cite: 6]. **HSBC:** 0.4% RC via online banking (HK$12.5/mi to HK$25/mi) [cite: 13, 14]. |
-| **All Cards** | `Government / Tax (IRD)` | **0** | N/A | Inherently excluded across all standard earn rates [cite: 6, 15]. Only earns during targeted, short-term tax promos [cite: 16, 17]. |
-| **HSBC Cards**| `Education / Hospital` | *Low* | N/A | Usually treated as 0.4% base rate (HK$25/mi for VS/Red) [cite: 13, 18]. |
+| Card | Category to Add | Rate (HKD/Mile) | Cap | Notes |
+|------|-----------------|------------------|-----|-------|
+| **SC Cathay** | Hotels (Direct Booking) | 4.0 | None | Explicitly added as an accelerated tier alongside Dining and Overseas [cite: 1, 2]. |
+| **All HSBC Cards** | Overseas (Physical) | Varies | Varies | Must separate Physical vs Online to support Travel Guru rules [cite: 6, 7]. |
+| **All HSBC Cards** | Overseas (Online) | Varies | Varies | Excluded from Travel Guru bonuses [cite: 6, 7]. |
+| **All HSBC Cards** | Online Bill Payment (e-Banking) | 25.0 | None | Paying bills via HSBC e-banking yields 0.4% RC [cite: 8]. |
 
----
+### Analytical Context for Missing Categories
+**The Physical vs. Online Overseas Divergence:** A monumental shift occurred in the HSBC Travel Guru programme effective September 1, 2024, and continuing firmly through 2026. Foreign currency spending is now strictly limited to transactions made at *overseas physical stores* [cite: 6, 7]. Online foreign currency spending is explicitly excluded from the extra 3% to 6% RewardCash rebates. The engine must separate the `Overseas` category into `Overseas (Physical)` and `Overseas (Online)` to prevent aggressive over-calculation of miles.
 
-## 🚫 EXCLUSIONS (Zero-earn categories)
-
-The following transactions yield strictly **ZERO miles** and must be programmatically forced to `rate = 0` in the Python engine to prevent users from falsely assuming they will earn base rewards.
-
-| Card | Excluded Transaction Type | Details & Sources |
-|------|---------------------------|-------------------|
-| **SC Cathay Mastercard** | **E-Wallets & P2P** | Octopus Wallet (O!ePay), AlipayHK, WeChat Pay, and Faster Payment System (FPS) transfers are explicitly excluded from Eligible Transactions [cite: 6]. |
-| **SC Cathay Mastercard** | **Insurance** | Insurance payments are strictly excluded from earning miles [cite: 6, 11]. |
-| **SC Cathay Mastercard** | **Tax & Utilities** | Tax payments, utilities, and tuition/examination fees paid via Internet/Phone Banking/ATMs are excluded [cite: 6, 11]. |
-| **HSBC (All Cards)** | **PayMe Top-ups** | Effective July 1, 2025, HSBC removed all RewardCash earnings for PayMe top-ups [cite: 4]. |
-| **HSBC (All Cards)** | **Tax Payments** | Settle tax to IRD yields zero RewardCash unless a specific seasonal promotion is actively registered [cite: 15]. |
-| **HSBC (All Cards)** | **Crypto / Quasi-Cash** | Transactions at non-financial institutions for foreign currency, money orders, and traveler's cheques earn zero [cite: 15]. |
+**Hotel Bookings:** Standard Chartered Cathay explicitly lists "Hotels" as a designated HK$4=1 mile category [cite: 1, 2]. This applies to direct hotel bookings, differentiating it from OTA bookings which process as general online retail (HK$6=1 mile).
 
 ---
 
-## 📊 SPENDING CAPS & THRESHOLDS (Verified)
+## 3. 🚫 EXCLUSIONS (Zero-earn categories)
 
-Your current engine calculates absolute miles without respecting the mathematical ceilings imposed by the banks. High-net-worth users inputting large amounts will receive mathematically impossible recommendations if caps are not modeled.
+The landscape of zero-earn categories has solidified. Banks are actively neutralizing loopholes that previously allowed users to generate miles without incurring merchant fees.
 
-| Card | Cap/Threshold | Amount | Period | Status & Impact |
-|------|---------------|--------|--------|-----------------|
-| **HSBC Red** | 4% Online Spend Cap | **HK$10,000** | Monthly | **VERIFIED.** Spending above HK$10,000 reverts to 0.4% base rate (HK$25 = 1 mile) [cite: 7, 8]. |
-| **HSBC Red** | 8% Designated Cap | **HK$1,250** | Monthly | **VERIFIED.** Spending above HK$1,250 at Sushiro, GU, Decathlon, etc., reverts to 0.4% base rate [cite: 7, 19]. |
-| **HSBC VISA Signature** | Red Hot Rewards 5X | **HK$100,000** | Annually | **VERIFIED.** The 3.6% Dining (or chosen category) rate is capped at the first HK$100,000 spent per calendar year. Beyond this, it reverts to the 0.4% base rate [cite: 8, 9]. |
-| **HSBC EveryMile** | Overseas Promo Tier | **HK$12,000** | Phase | **ACTIVE (Jan-Jun 2026).** Must accumulate a minimum of HK$12,000 in overseas spend in a phase to unlock the HK$2=1mi rate. Maximum bonus RC is capped at $225 RC (approx HK$15,000 spend ceiling for the bonus) [cite: 20, 21]. |
-| **SC Cathay** | Qtrly Bonus Threshold | **HK$8,000** | Quarterly | **VERIFIED.** Must spend HK$8,000 cumulatively on Cathay/HK Express to trigger the extra 2,000 miles, bringing the effective rate to HK$2=1mi [cite: 1]. |
+| Card | Excluded Transaction Type | Details |
+|------|---------------------------|---------|
+| **All Cards** | E-Wallets (PayMe / AlipayHK / WeChat Pay) | Absolutely no basic mileage or RewardCash accrual for top-ups or transfers across SC Cathay and all HSBC cards [cite: 2, 3, 9, 10]. |
+| **All Cards** | Direct Tax & Insurance Payments | Paying IRD or Insurance directly via credit card portals earns zero. *Exception:* Using HSBC Online Banking bill pay yields 0.4% RC [cite: 8]. |
+| **HSBC Red** | Supermarkets | Supermarkets are *not* zero-earn, but they are relegated to the abysmal 0.4% RC (HK$25=1mi) base rate [cite: 3]. |
+| **HSBC EveryMile** | Supermarkets | Categorized under "other eligible transactions", earning a heavily penalized 0.4% RC (HK$12.5=1mi) instead of the 1% general rate [cite: 9]. |
 
 ---
 
-## 🎯 ACTIVE PROMOTIONS (Current Month: March 2026)
+## 4. 📊 SPENDING CAPS & THRESHOLDS (Verified)
 
-To provide an accurate optimization engine, temporary modifiers must be applied. These are valid as of the current 2026 operational environment.
+To prevent the engine from outputting infinite linear miles, strict algorithmic caps must be enforced. The following thresholds are verified for 2026.
+
+| Card | Cap/Threshold | Amount | Period | Status |
+|------|---------------|--------|--------|--------|
+| **HSBC Red** | 4% Online Shopping | **HK$10,000** | Monthly | Active. Excess earns 0.4% RC [cite: 3, 4]. |
+| **HSBC Red** | 8% Designated Merchants | **HK$1,250** | Monthly | Active. Excess earns 0.4% RC [cite: 3, 11]. |
+| **HSBC VISA Sig**| Red Hot Rewards (5X) | **HK$100,000** | Annual | Active. Excess earns 0.4% RC [cite: 12]. |
+| **HSBC EveryMile**| Overseas Promo Threshold | **Min HK$12,000** | Per Phase | Active (Jan-Jun 2026). Must exceed 12k to trigger 1.5% RC bonus [cite: 13, 14, 15]. |
+| **HSBC EveryMile**| Overseas Promo Cap | **Max HK$15,000** | Per Phase | Active. The bonus 1.5% RC is capped at $225 RC (which perfectly correlates to $15,000 of spend) [cite: 14, 15, 16]. |
+
+---
+
+## 5. 🎯 ACTIVE PROMOTIONS (Current Month - March 2026)
+
+Your engine must account for the following time-sensitive active promotions.
 
 | Card | Promo Name | Details | Validity |
 |------|------------|---------|----------|
-| **HSBC EveryMile** | **Overseas Spending Offer** | HK$2 = 1 mile on overseas transactions if the net spending amount exceeds HK$12,000. Phase 1 runs Jan-Mar 2026; Phase 2 runs Apr-Jun 2026. Requires Reward+ registration [cite: 20]. | Ends 30 Jun 2026 |
-| **HSBC EveryMile** | **Agoda Flash Sales** | 15% off worldwide hotel bookings year-round. Plus, monthly 30% off flash deals on the 15th of every month [cite: 22]. | Ends 31 Dec 2026 |
-| **SC Cathay** | **Overseas Extra Rewards** | Earn an extra 2,500 miles upon accumulating HK$10,000 equivalent in non-HKD currency overseas. Requires registration [cite: 11, 23]. | Ends 3 Mar 2026 |
-| **HSBC (All)** | **Travel Guru Membership** | Tiered travel rewards. Level 1 (GO), Level 2 (GING), Level 3 (GURU). Provides up to 6% extra RewardCash on foreign currency. *Note: The specific EveryMile tandem offer under Guru was discontinued April 2025, but the core Guru FX rebate remains active* [cite: 4, 24, 25]. | Ends 31 Dec 2026 |
-| **SC Cathay** | **Time Deposit Bonus** | Up to 38,000 extra miles for setting up a 12-month Asia Miles Time Deposit with new funds of HK$1,000,000 [cite: 26]. | Ends 31 Mar 2026 |
+| **HSBC EveryMile** | Overseas Spending Offer (Phase 1) | Spend > HK$12,000 to earn extra 1.5% RC (Total 2.5% RC = HK$2/mi). Capped at $225 RC per phase. | Jan 1, 2026 - Mar 31, 2026 [cite: 13, 14, 15] |
+| **HSBC EveryMile** | Agoda Hotel Promo | 15% off year-round plus 30% monthly flash deals on designated hotel bookings. | Year-round 2026 [cite: 13, 17] |
+| **HSBC All Cards** | Travel Guru (Phase 3) | Extra 3% (GO), 4% (GING), or 6% (GURU) on physical overseas spend. Requires registration. | Valid through Dec 31, 2026 [cite: 6, 7, 18] |
+| **SC Cathay** | RentSmart Promo | Settle rental deposits/payments via RentSmart to earn HK$6=1 mile plus up to 1.5% fee waiver. | Until Apr 30, 2026 [cite: 1] |
 
 ---
 
-## 🏷️ MCC INTELLIGENCE
+## 6. 🏷️ MCC INTELLIGENCE
 
-Correctly routing spending into the correct engine category relies heavily on understanding how Mastercard and Visa code specific digital merchants.
+A robust calculation engine requires granular Merchant Category Code (MCC) intelligence to avoid misclassifying everyday edge-case transactions.
 
 | Merchant/Type | MCC Code | Classification | Which Card Benefits |
 |---------------|----------|----------------|---------------------|
-| **Foodpanda / Keeta** | 5814 / 5499 | Fast Food / Convenience. **NOT** processed as standard Dining (5812) [cite: 27]. | **HSBC Red:** Captures 4% (HK$2.5/mi) because it is processed as an Online e-commerce transaction [cite: 7]. **SC Cathay:** Captures HK$4=1mi as Online spend [cite: 10]. |
-| **Uber / Uber Taxi** | 3990 / 4121 | Online E-Commerce / Transportation [cite: 28, 29]. | **HSBC Red:** Coded as online spend, yielding 4% RC (HK$2.5=1mi) [cite: 7]. |
-| **HKTVmall** | 5311 | Department Store / Online [cite: 30, 31]. | **HSBC Red:** 4% RC. HKTVmall is the quintessential online shopping portal [cite: 7, 32]. |
-| **Trip.com / Agoda** | 4722 | Travel Agencies / Online [cite: 22, 33]. | **HSBC Red:** 4% RC. **EveryMile:** Explicitly designated for Agoda promos [cite: 22, 34]. |
-
-*Note on Bill Payments:* Paying utilities or insurance via a merchant's website (e.g., entering credit card details on the FWD or CLP portal) sometimes triggers "Online" MCCs, but banks actively filter these using specific backend exclusion lists to prevent them from earning 4% online bonuses, forcing them down to 0.4% or 0% [cite: 12, 35].
+| **Uber / Uber Eats** | 4111 / 4121 | Commuter/Taxi or Online | **HSBC Red** treats this as Online Retail (4% RC / HK$2.5=1mi) [cite: 3, 19]. SC Cathay treats it as local base (HK$6=1mi) [cite: 2]. |
+| **Foodpanda / Keeta** | 5814 (Fast Food / Delivery) | Online Retail / Dining Exclusion | Excluded from HSBC Red Hot Dining. Benefits **HSBC Red** (Online 4% RC) [cite: 5, 20]. |
+| **Online Bill Pay** | Various | Bill Payment via e-banking | **HSBC Cards** earn a flat 0.4% RC (1 RC/$250) when paid through the HSBC Online Banking portal [cite: 8]. |
+| **Hotels (Direct)** | 3500-3999 | Lodging / Hotels | **SC Cathay** explicitly grants HK$4=1mi for direct hotel bookings [cite: 1, 2]. |
 
 ---
 
-## 📝 RULES FOR CALCULATION ENGINE (Python Delta Updates)
+## 7. 📝 RULES FOR CALCULATION ENGINE
 
-To bridge the gap between your current engine and the verified 2026 landscape, the following Python-parseable logic updates must be integrated into the `calculate_miles` function.
+Below is the definitive, Python-parseable logic required to update the `calculate_miles()` function. It synthesizes the exact mathematical rules dictated by the 2026 terms and conditions.
 
-### 1. Update the `CATEGORIES` Master List
-```python
-# ADD the following to the CATEGORIES array:
-"Supermarkets", 
-"Insurance / Utilities / Tax",
-"E-Wallets (PayMe/Alipay/WeChat)"
-```
+### Engine Architecture Updates:
+1. **Update `CATEGORIES` array**:
+   - Split `Overseas` into `Overseas (Physical)` and `Overseas (Online)`.
+   - Add `Hotels (Direct Booking)`.
+   - Add `Online Bill Payment (e-Banking)`.
 
-### 2. Standard Chartered Cathay Mastercard Delta
-```python
-    # ══════════════════════════════════════════════════
-    # STANDARD CHARTERED CATHAY MASTERCARD - UPDATES
-    # ══════════════════════════════════════════════════
-    if card == "Standard Chartered Cathay Mastercard":
-        # ... existing flight/dining code ...
-        
-        # [DELTA 1: E-wallets, Insurance, and Tax earn ZERO]
-        elif category in ["E-Wallets (PayMe/Alipay/WeChat)", "Insurance / Utilities / Tax"]:
-            rate = 0.0
-            notes = "Strictly excluded from earning Asia Miles by Standard Chartered terms."
-            miles = 0.0
+2. **Update SC Cathay Mastercard Logic**:
+   ```python
+   # Standard Chartered Cathay Mastercard Updates
+   if card == "Standard Chartered Cathay Mastercard":
+       if category in ["E-Wallets (PayMe/Alipay/WeChat)", "Insurance / Utilities / Tax"]:
+           rate = 0.0
+       elif category in ["Cathay Pacific Flights", "HK Express Flights", "Cathay Partner Dining"]:
+           rate = 2.0
+       elif category in ["Dining (Premium)", "Dining (Casual)", "Hotels (Direct Booking)", "Overseas (Physical)", "Overseas (Online)"]:
+           rate = 4.0
+       else:
+           # Online General, Food Delivery, OTA, Ride-Hailing, Supermarkets, In-Store, Octopus AAVS
+           rate = 6.0
+   ```
 
-        # [DELTA 2: Online General explicitly earns HK$4 = 1 mi]
-        elif category in ["Online General", "Food Delivery", "Travel Booking (Non-Designated OTA)", "Travel Booking (Designated OTA)"]:
-            rate = 4.0
-            notes = "Eligible online retail spending earns HK$4=1 mile."
+3. **Update HSBC EveryMile VISA Logic**:
+   ```python
+   # HSBC EveryMile VISA Updates
+   elif card == "HSBC EveryMile VISA":
+       if category == "E-Wallets (PayMe/Alipay/WeChat)":
+           rate = 0.0
+       elif category in ["Supermarkets", "Insurance / Utilities / Tax", "Online Bill Payment (e-Banking)", "Octopus AAVS"]:
+           rate = 12.5 # 0.4% RC -> 1 RC per 250 -> 20 miles per 250 -> 12.5 HKD/mi
+       elif category in ["Travel Booking (Designated OTA)", "EveryMile Designated Everyday"]:
+           rate = 2.0
+       elif category == "Overseas (Physical)":
+           # Evaluate Promo Threshold (Jan-Jun 2026 Phase)
+           if amount >= 12000:
+               # Max spend for the extra 1.5% RC is 15000 (cap $225 RC)
+               bonus_eligible_amount = min(amount, 15000)
+               base_miles = amount / 5.0 # Base 1% RC -> HK$5=1mi
+               bonus_miles = bonus_eligible_amount / 3.333 # Extra 1.5% RC -> HK$3.33=1mi
+               miles = base_miles + bonus_miles
+               rate = amount / miles if miles > 0 else 0
+               notes = "Overseas Promo Triggered: HK$2/mi effective on first 15k, HK$5/mi thereafter."
+           else:
+               rate = 5.0
+               notes = "Did not meet HK$12k overseas threshold. Base HK$5=1mi applied."
+       elif category == "Overseas (Online)":
+           rate = 5.0 # Excluded from Travel Guru and Physical promos
+       else:
+           rate = 5.0 # Base local rate
+   ```
 
-        # [DELTA 3: Supermarkets fall to base rate]
-        elif category == "Supermarkets":
-            rate = 6.0
-            notes = "Supermarkets earn the base local rate of HK$6=1 mile."
-```
+4. **Update HSBC Red Mastercard Logic**:
+   ```python
+   # HSBC Red Mastercard Updates
+   elif card == "HSBC Red Mastercard":
+       if category == "E-Wallets (PayMe/Alipay/WeChat)":
+           rate = 0.0
+       elif category in ["Supermarkets", "Insurance / Utilities / Tax", "Online Bill Payment (e-Banking)", "Octopus AAVS"]:
+           rate = 25.0
+       elif category == "Shopping (Designated 8%)":
+           if amount <= 1250:
+               rate = 1.25 # 8% RC
+           else:
+               miles = (1250 / 1.25) + ((amount - 1250) / 25.0)
+               rate = amount / miles
+       elif category in ["Online General", "Food Delivery", "Travel Booking (Non-Designated OTA)", "Travel Booking (Designated OTA)", "Ride-Hailing (Uber/Taxi Apps)", "Overseas (Online)"]:
+           if amount <= 10000:
+               rate = 2.5 # 4% RC
+           else:
+               miles = (10000 / 2.5) + ((amount - 10000) / 25.0)
+               rate = amount / miles
+       else:
+           rate = 25.0 # Dining, In-Store General, Overseas (Physical)
+   ```
 
-### 3. HSBC EveryMile VISA Delta
-```python
-    # ══════════════════════════════════════════════════
-    # HSBC EVERYMILE VISA - UPDATES
-    # ══════════════════════════════════════════════════
-    elif card == "HSBC EveryMile VISA":
-        # ... existing designated/overseas code ...
+5. **Update HSBC VISA Signature Logic**:
+   ```python
+   # HSBC VISA Signature Updates
+   elif card == "HSBC VISA Signature":
+       if category == "E-Wallets (PayMe/Alipay/WeChat)":
+           rate = 0.0
+       elif category in ["Food Delivery", "Supermarkets", "Insurance / Utilities / Tax", "Online Bill Payment (e-Banking)", "Octopus AAVS"]:
+           rate = 25.0 # Explicitly bypasses Red Hot Dining
+       elif category in ["Dining (Premium)", "Dining (Casual)", "Cathay Partner Dining"]:
+           if amount <= 100000: # Assuming annual cap limit context
+               rate = 2.78 # 3.6% RC (9X)
+           else:
+               rate = 25.0 # Drops to base 0.4% if annual cap exceeded
+       elif category in ["Overseas (Physical)"]:
+           rate = 6.25 # 1.6% RC Base (assuming non-Red Hot allocation, or mention Travel Guru stacking potential)
+       else:
+           rate = 6.25 # 1.6% Base
+   ```
 
-        # [DELTA 1: Supermarkets are severely penalized]
-        elif category == "Supermarkets":
-            rate = 12.5
-            notes = "MAJOR EXCLUSION: Supermarkets earn only 0.4% RC (HK$12.5=1mi). Do not use this card."
-
-        # [DELTA 2: E-wallets are nerfed to zero]
-        elif category == "E-Wallets (PayMe/Alipay/WeChat)":
-            rate = 0.0
-            notes = "PayMe and other e-wallets no longer earn RewardCash as of July 2025."
-
-        # [DELTA 3: Insurance / Utilities]
-        elif category == "Insurance / Utilities / Tax":
-            rate = 12.5
-            notes = "Online bill payments earn only 0.4% base rate (HK$12.5=1mi)."
-```
-
-### 4. HSBC Red Mastercard Delta (Implementing Caps)
-```python
-    # ══════════════════════════════════════════════════
-    # HSBC RED MASTERCARD - UPDATES
-    # ══════════════════════════════════════════════════
-    elif card == "HSBC Red Mastercard":
-        if category == "Shopping (Designated 8%)":
-            # [DELTA 1: Implement HK$1,250 Cap]
-            if amount <= 1250:
-                rate = 1.25
-                miles = amount / rate
-                notes = "8% rebate applied (HK$1.25=1mi)."
-            else:
-                base_miles = 1250 / 1.25
-                excess_miles = (amount - 1250) / 25.0  # Reverts to 0.4% base
-                miles = base_miles + excess_miles
-                rate = amount / miles  # Blended effective rate
-                notes = "WARNING: 8% cap (HK$1,250) exceeded. Excess earns base 0.4% (HK$25=1mi)."
-
-        elif category in ["Online General", "Food Delivery", "Travel Booking (Non-Designated OTA)", "Travel Booking (Designated OTA)", "Ride-Hailing (Uber/Taxi Apps)"]:
-            # [DELTA 2: Implement HK$10,000 Cap]
-            if amount <= 10000:
-                rate = 2.5
-                miles = amount / rate
-                notes = "4% online rebate applied (HK$2.5=1mi)."
-            else:
-                base_miles = 10000 / 2.5
-                excess_miles = (amount - 10000) / 25.0
-                miles = base_miles + excess_miles
-                rate = amount / miles
-                notes = "WARNING: 4% cap (HK$10K) exceeded. Excess earns base 0.4% (HK$25=1mi)."
-
-        # [DELTA 3: E-wallets Nerfed]
-        elif category == "E-Wallets (PayMe/Alipay/WeChat)":
-            rate = 0.0
-            miles = 0.0
-            notes = "PayMe and other e-wallets no longer earn RewardCash as of July 2025."
-
-        # [DELTA 4: Supermarkets and Bills]
-        elif category in ["Supermarkets", "Insurance / Utilities / Tax"]:
-            rate = 25.0
-            miles = amount / rate
-            notes = "Earns 0.4% base rate (HK$25=1mi)."
-```
-
-### 5. HSBC VISA Signature Delta
-```python
-    # ══════════════════════════════════════════════════
-    # HSBC VISA SIGNATURE - UPDATES
-    # ══════════════════════════════════════════════════
-    elif card == "HSBC VISA Signature":
-        if category in ["Dining (Premium)", "Dining (Casual)", "Cathay Partner Dining"]:
-            # [DELTA 1: Implement Annual HK$100,000 Cap Warning]
-            rate = 2.78
-            miles = amount / rate
-            notes = "3.6% Red Hot Rewards. *Assumes user has not exceeded HK$100K annual category cap.*"
-
-        # [DELTA 2: E-wallets Nerfed]
-        elif category == "E-Wallets (PayMe/Alipay/WeChat)":
-            rate = 0.0
-            miles = 0.0
-            notes = "PayMe and other e-wallets no longer earn RewardCash as of July 2025."
-
-        # [DELTA 3: Supermarkets, Bills, and General]
-        elif category in ["Supermarkets", "Insurance / Utilities / Tax"]:
-            rate = 25.0
-            miles = amount / rate
-            notes = "Non-bonus/bill payment earns 0.4% base rate (HK$25=1mi)."
-```
+### Analyst Commentary on Mathematical Integrity
+When executing `math.floor(miles)` in the main return statement, it is imperative to note that the backend systems of these institutions calculate points/RewardCash based on individual transaction integers, not aggregated monthly floats. For instance, HSBC calculates $1 RC for every HK$250 spent. If a transaction is HK$249, it yields 0 RC. To make the engine perfectly accurate in a real-world deployed app, future iterations should accept an *array of individual transaction amounts* rather than a bulk monthly sum, flooring each individual transaction against the $250 modulo logic before applying the multiplier conversions.
 
 **Sources:**
-1. [moneyhero.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH9ECFZgYkm1i5PleaYxKEV9b4O0DwFLsfFCsRlQcKbk8I-cGf3MTc2_597ZnXxrZfFK0oQoKGDc5GY-VruGBZa7Lx31BDVuiUSV2nCl43VjbwUgsV6qVszQnqIm81AVAoOlxtxeKKKttkaBlmplfoMZhOR-g==)
-2. [jetsofind.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEfvnQs4tn9SSD9jmd8_Ab2nM13YbzKwbtOQjbbQtLLhNSLXbbSkVbhd3IROlHi9jQQ-G2gHed4btfQr8wmvNtxGvRmPep72vqRrJeOwYakDIm4xRHXC-cBk8AdxpefeBVZXA2mXYtRAQN2dLdnnFtrEmRkNX0J60XYWw==)
-3. [jetsofind.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGLd3ECJVhpuGYmdVYAu_xxLnJcQBQjmyocrcQG3ipNSpCPTY1Fj3cxD29cnWsGtJ-qTpgNaksdgsMxt-OfiZaHq6y4LnTc_62Y-MyLgS5sl8EVyJFdCt1bbxokTzn4ZTY=)
-4. [flyertalk.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF7GO3mF2JVOBovarZ8NT6IA7H_C_6O8kaj_S7PkL_KUdlLrAsHn6hZMeK-Wuhu4ed2DmuCN_G7hc0fJrSAYaz0DspmCwrReJV_Rhp81xX8TdSgF9Jb8xBEzNoIb8f-8vMG7BESzPSrx0MwOpj35IZ9FAF92gmfNuv79XdeSZCyvctf_0pg3rFR9r7h82F6aoZT3Uu4nkd_k4DOL0rvCJpa4VIG-vEdZ4I6MjMZqot4gVim-NVJXvd8)
-5. [flyformiles.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGKaRwnwsk6IK1TZhyFxXeM2EOlT9qiw7kYAdp5ORpscbFAlJ5pWBEeun6AFPqN3_EhIrXbl0ul8jl4kKW0geXoEANa43APy2KnGaEdjT4473IhsKdgN4--1lx3BShBxQWx8x-dwyU1FoeYR03ZQ77xzEfxe5lyUkWmtuv9IKCWyaonWl5UQ84mNBBPq9jjQLgevX6X2tmLX6r2)
-6. [sc.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHvkIvScG__fw7GYjM9GIBZWSmmX4ixqoPkMT4OsxL-yQPlTIbV4PCnGi5gIUM3UMysQBw134b7dZhZ6sSvYE7pyQXdVEwhPFtLi0OjgE6UJgMvTlgQZNHbJ132JQ3Jj1xGgpV-Aw1GhYvNtIZou979ceBJQaZSiJy2ZesBVk6TZf0pJ9ReoQ==)
-7. [moneysmart.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHCQmvkNfXAXJW2O4bmEn6PWhuUn907CvGzUValDF2sXVU3su0HWYiiEmb7A-XQRw2qTg0x83vFlEai1y2wqnFmmGeKGKFH9A_q3QDGGLiSPX97XeA32Xb-KNZMXYFH3LIZAqXxckTs-iKLIuk=)
-8. [jetsofind.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFdMluWMttSNnzGPRDRKUubBDMyphbuHm25kAI4AoMv4gVrcg46JuRQKgYoPqopvhMeV9A9kmb1jjPHqoT6yoCyArfWNvqY9Kue0edemNSGPHpSu2FpnsMLIFvLmZ4VbvVVSY4IqmPSfeKpRw==)
-9. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG2SENqDvpcPMhnhcFtwW2RohPk3-41UnSJh4EKJankNo29I8v2TacEv1Huu_Du9zRZ4JBcnZxbyQeUtYJCV8PFqSKJwM6zAcZ9ZLOna3ERGe-D8f_eCKhFGpCU_n8dCYIMFp5NIqPrOMd6jnIidTyUmhG4sdN0ofGytcY57IO7e9B1kDE=)
-10. [wise.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEg8iVz3Y34IakYH-GkgopPJZ8YKQvQx2OT6eagU5EFqIdKGc86Sj6Yq78RG8OISEtVtnk1BoB6ARM3Ear-Rn2587OiaHEhXiLfGtJdYIFNNpLhhr_b5JkvxrHyQqIv8YJxBoQHxv6J)
-11. [sc.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFzk965f66T1kSx0o9ey-oeAUzuvUBfMg2tWgWeB1ntCxbIJt81Ky18IBC9-1d-kBOEk0BOsFZzAkapY9F_z7rhoXbLBuDBVRCKbSCn8Y2l66NllEbnqsVTbdzRdU9UsPlMfD6kSMqXOczB5PY8JMoyOsKjEjI_4saJWQBsiKpxT3lFzvuM6PVA2XYjsVU9SUfXgw57Cr9bbH5900497K3WduQ_JCT0bH1dGMICpB1Ci2CxkRE3rROFUYdt81YRVv9FUrplFor8WTuKSHp0Lg==)
-12. [bowtie.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGDppNiRMSWqLGVbBjw88UPJnEpSrp887hjfOQOIuMN-t88HrIjNqADbWcRKxY9otZxfujM0UgKb_SFDriYFRSt0iiETfCuUkfzeCa-ogqGCgoSrhFHSRk6hnDgkQgcBalCaFJ_jQvqTLisVN3v_f260PRXGypch18OOhSk8VWOmRVIM7jjgIKTHEs=)
-13. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFfT7GnqDyGHmBAfoZXlqxJ4dVS0O-lpvb2G1lMTzK_Q-DiDmordncSGhbP6xApS7mbHQDp78aYjEx0wLjIHCv2PPRIQQ8YlkQqRwT8MTN4YUzNSkZ8bUwM878Rj98VkVsw1LrqhPVllA==)
-14. [moneysmart.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHTiOk7vYeswjRdYsB87hujUmKzk7ccBvEtz0qJrbH1cz3smKE49V_3EXRq0FSao-FinyC-FR9mWNnvt_boEy3ZBpaH66l22sVfQCe4hzBYzK11QOEVMGoX4QFHdzdpl8HQHjHj4nlqnn-LqIKwAGmT-5EhjAwrhScD4FGC3sZePTdh)
-15. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHyTPXhiRMNSSCjGopTzZmd483gSgReuUzneDjhwNHPVZxJt7vlCgkTT0XscY51fgeEOraAX-ONYSVP70vWGLY2GCfqfykfm8JJ4hKbnIXUj2UZvY05SpRlLjTErk2npCeX6gL7fhPzJftHTzn4FTzJnC1UlHcsmeMfT43URu_GwmQ=)
-16. [longbridge.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGbKSCT6P52oKG9yboc7W96mMyS9XCRninj0ZX8hrmwR1XqsgJyMacQRlnimMtoHv011o2j2plDNs5Txs5i1Qd9IgFZNo5hS9TBRHwBIfflEqLwJV763D1iukklJL8=)
-17. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGJkjgPx1tFntuPsD-Wgv547lrrG-N26nMBlAyzY55odPECSEL3Xx7XLoOo7sJB_QD7sqf5U8MQroccEbFJuHZiNaF3OGuaGujTAIlQ-xeAivqEPbg3XXBo-yG0u04D5ayt51-G441A4ewPazQNOQta7Q_qGA==)
-18. [flyertalk.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhjkkEN3K_nBE0p-HVTujrUxFa_3NX1H6IFt-wjR0kEF9JgUrKo79goOG0piIQpGjjTkoALRTrntRGIoaLkXSKZgM2iA9TP-ulAovG7Q_HkcZF5vMXhg-wuAbvkVY1R8em7GWC_VmkUeWPVusHDnbMzUtdu2vDjAiBvK16ImzNGOcD0LyKkhluizJWzUzJ1MSSAz31ddWQTeNhYaLwH9429M9Rl13TgdnL5Pq4uWahM-YmqKvEBg1WMQ==)
-19. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFXacNaU_VhVWUGeUop7fRBofgb2HnHyhza43LuHh_VNvuLFiz-9NT2YTJr7gx2rlrXQ7ujxX8YBrnCxm82G6SifoPbUTtsRecvKlKds1VUbZDPwmVQXSZ1AT9UekY0WWckxt-yO6zV)
-20. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFX4-YgKRUMiyYaePIkqqsI4KmJACgRysaNqS0oXI5mT-Fx53Ku4G_d6kpPjT-BG6hx1a4drHtKUkpXgXiYaa92g968rhqJT43KJ8ZFhJnwCuh4-fIwiipslJNnQTGnG32vaL39YnBKlCjatfeysGVZC0uS3XIjF271z0nkb5PSW3_7bvY=)
-21. [flyformiles.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGX0QYlqev47L1tV_kuP60OEihPOCjZ7G4Ac43Ree9VItNfGDjm8oJqYiPFSS_saBcM-qtgIb3OSEvg5sth9h4xBhLzcDDxL-fSarp-paxsOQ2tdiCJDIVBl8yw9x7MUGIWOG4TWM8fiGCHuro4TG5zeoLaUT2N)
-22. [agoda.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFJ0i6d9pPNAmIBHJcNdNTZqhmKbgECog3GCkcZD3WB-L7ySZi5_fA5GJfwjrpyHb6BMlpShxXSGqwKM2yaNWf5qmeZ432S2VxyiWE8i9NxW8NdVqKcj3BM)
-23. [cathaypacific.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQESxlvUiby3TWf8PQjUVJAYh_Z67C7eKp2LmUlqUXwlqnafkt7MqwwoWR4qv_1ZJdeSLCG0NcdTcKehDnXedXesQLdBCJQgkeUyaJvGYWDqUwSf55umOpvShz6rmrjD45E23Zln7F1ZijCjUP2AioNuaEUpqCaU9k4qlWgSX4ozSg==)
-24. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEGY-quOi3Xr7Fv-CDrkd6bRKflSMBfO4DMEIMqCgzSbLzFakcoQ7dxEsBPu9YxmmZeV0OSHKSeO4RqitEcpUUPWCXvoh5VRtYbORBHJAI16SMY6zjcZw53-4oerSnTL-VaH1Oe-KSZLr9BdJsELrB8rZHjXBuzJQ==)
-25. [flyertalk.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE7DklWKGXx8uhoNt2ABGNYrbZZWF65QK6ybT9kgGRksRnrAVunjbviXMQ3WoK7rtnTR-WfW95R4NKDUCMISWAVotM7pHi2q1qHqlD4Nwnl0pKxNiVZu3HXhfV9R2hMLyCXO5owSezTu9Eg)
-26. [sc.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEAOIOh0iKxCdXLWJcpeWL1EAd-vuX7GLlJhNGAtK3vx_I1fOAigcd3np9XNsbhqs0SB-poj_e4IZ0sJXSDERath_6qlFIPLqAgoMR50be085XPbre5iZsJaab66fZb2U-ZpXC8QWk4SzNUFxs=)
-27. [heymax.ai](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFun9xZsoQyXTdhcxko6OcOJUcux7dDY-X4vIzvYCw21rjvi9pRehggpjfju6b4fZrOozZXdVHGTNeAUiXR1FopDMq8v1Z0_PwWt55t_t1VW0S__KS1bQ47ol6upZRM9dEFD38CP49larY6C1hz7aDrIfqRCvr4GQ4g9Q==)
-28. [mastercard.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG81A0TMrb_a21CNOccdU1OT0xrmH_ck97U_m3YuCInDf15GNBpldZlQN_NKxRZhDp4IQQDtXN6M_YkujnXJcr33C0pqMynLpje-Unxa4mR5CZmSV_JctskFPQcj_lJ2wbduUjGMQBtFzQakD5pf7v-rH5KtvNR27edFKKyM7j0PUtMBWeAnRrlI01AHeCwMrifai7tHL2EumpR-tyaCnhZO2n1epYnpMaanHw=)
-29. [dbs.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHa2XvMoPIaL2aepqjvJefbeIsJ1g1nU7Iz9_Z3oAwje8YCfVVCp44NWOW4vyHu_5GIN6RjtvU4cXClaovi94TaMO1PzwTr7Pc2U31OuQw0sZaJEaGUVQ0ytE7xEn2mrg1Da8ZD3wVIXgtKv2r9os1B-BBQj_usQr9-gts8Qbh2BLbkVRZpw3P1x0_w-w==)
-30. [hongkongcard.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGd9IqHI3nGa0kRhaRzjaqtJcySLrY2asvP6UnJMmasLbTsJOYtbSS5oVy35e3mS28rhL2lzXIYiCw8WgvgNn8bHFE_VyVTlQyWVgWT3bC9-w5acdvNLFNCJya8NTiV21f0dWuQB9W7cjQn42yM5Qv3CwLDVp6mziK9MUzM415nJv0SIzSu6AcAR2t4egyaoyCyuGJIONDdAGKgkzppOMMJ2G2eBw==)
-31. [moneyhero.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_D6xVqwsav-W2zWLdxFZabyro2EPChULaqQBguekVcDL8lIHqoE8MjhvI6xFo4V68NiZCfzAzYZFOUmvo3nq0DxPbjC3qS4bomhWUyub6uzgcFj4wT3_ixay1aQp62imDhfDoFtFxUwWd6Yc8YqfyGPcXwWrcNiwgA0c=)
-32. [moneyhero.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHmKLTYQ2HtyrBadtsauofDR0WPwif2lu2FnZrmCiKBm6p9BeGdOl6FcTDPljCbrFgoqSRpq6_KhNqYOpXygaVznmTMmzQCQJKNJPeJD4JMfnmLw_4iIAHhIXrb0CT6AuTT4PaXBnx9XDIoLGWjIg5lUaqMTfRp-A1sSlu2tKQ=)
-33. [agoda.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFiLJvS-WnOPRiVVW_lj_05OBXCZsQBqU7RemWsLHn4LBFm3xiPf9QAjvktiY4VGoiYBCE7X5-MTY4vu_RIwIH6moSADWAXKrH4YAkiZX_qABatbLGY7meu)
-34. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEDweYjnh6vH2qPZh2oxj_jvIExIJrCrSpv92O1jZ8lJR-XN2JpdKB14Cx4VuBUSg3HlnKizaFgJmnFi68wl47cHsAbDn9wb4b2KLuWudUoLheOWjkq9LgtaN_qkOpKQ8W2UX4nnc7weiHvyenitHU2ivDXkzxhaLKGzpB9_KhujvbtHSF_qLF88BIoYe1WIpk=)
-35. [jetsofind.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGVhTi51eZ4wJRtolfaYVnh5yFproHcDkK-8Mb1xxE3qkckRGC-NvnMo_YhRAFeSUCuuORUJjdcsz_hIlwMC8SgToksnm1_d5mSfTf6FD1uykvGZ-PWodAEI6g=)
+1. [sc.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFB97JVC4FsEqPGeBpk2jKEt0P08SQMqNqZBKOWHMPe7F_otskLwOlAtY3JYQDv3GLo7_xBCWOoW0aLrV72l5IYz0pnRuUvPsGAbzE77XThY_vuraSQEXSS8ZI-9k094w==)
+2. [sc.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHzq2BR1WAMi6nJe41yh4yTlXZPCLZXKUmgYiB9dVJGu99COCWX9rU8Ea3jmWSPowV4NRGET6Tks0R593PAEOUFnSRjig9RhTL_ZoDgibX6JRGo8Qadf6IHcG2JuJD7pKMiGldwocRkLJxP2ksz3N663vQp1JPebqn7WZEG8jW0S5li23X8cA==)
+3. [hkcashrebate.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE-L6HWzMbmxUggjl93sxeT_wJONdwcfK7FrwxDKsVm7MrglhEmRGcWyogUMqgnYW10NhqXZwJElLak_JuLvjeEm7BMBPKKLsN5_0hdHxiF30Fcf8sl4A==)
+4. [moneyhero.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVloBZIku7g9IJqclD9eNrvSyzCD1G60-6E3rs5y3mgaJJdP52WrVyDpAUK-Ml_TFSnBy6o-pJDmmi__n5L6VxmIzxGYTkt4xx3sPE-cXNsozbqvfVb-cBaDjtrOTTLgEYlSl-hsWQr_GBs7actaCKRpc1e4ZMUqjGk_ZNmYQ=)
+5. [jetsofind.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEm1xtAAMyiStT_FvilPtlILodRPJMVZoKNURP94jN7JeZRQ5aIs2y7jLTEcWzMP1ZglOscpOw90IGXmj2kL2r5PCJEJmy4QmquTQq_eGo66S_5q7uKrLXEHKYDNugQqHzPEyMANb0OpPrEarIeGc3qwTYG)
+6. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQED4vDfl6f0yGRrxT-CTxFjjWoq1bW9OfmpErrEYrv5Wy4IXLWMwku-Oe_CVqMAUudroO61rZebMdSdCBsFUQ2xzx1VgLAZ03163f07wM_V0XMd0bIoU1ipfNEHm1pO7-7O6tZuElAtlJ0m_z6EsK81e3iLJc6VZg==)
+7. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFOe2YHybKni5AoCl193fHEgkTy58EO0OQQnaAtSfIaWyUHQ7vwDM-pu_IUqzcnUN1EuW-vFAYvrYk11oITrv1IWJsMstx2HZG6m2wjNZ3S9i1lgAKQVgR9otRKMR5-3ikec1N76yuT5wMhRPzceMeSMxBgfmppj3bPN9YuTQyBkid1SNbM4TbyFZ7FaUCjPRGI2pOnog==)
+8. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGlLS4gcuUrBy8UCEJXmF2iTsRBJ3-iB5yx0wqbnna9SAjmFUWuM_JtfiJCk0aUb-p2RnBKir2l0MmBX63sEAUFv3P5Z3gfT9Oi8_4ZRXAd4laD_g2aWsCMcELkWqEHQxQLL5Rs9lNB0ex1TN84)
+9. [jetsofind.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGdybap-06JaMh1-oVTmGSSAbMbyO2_EYjGJa96doorICIUpmvuR3MBHdvIljypmpr4LVfrMpIhujh_Etgsb0i_nSUe9hK-dAZhAnJIUg6xOQXPZYH5_j437LOv_KcMd5M=)
+10. [sc.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEyA1GEbWyQo3JZhCSQYseTMmmKbkp96i18GriUAxwzUSmGYrVu5jj7XrR1kzxg0xEVRG1Zucd2EK96Qlvd_woYgUZ5s4xPRNXQ8UvnpxWHuwSAWLbGbEAS6LDBy1X6mWjswuK0)
+11. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEzuRkYJtMKKpWeMabmSui8Glk6mLZ0eW8-a4a9N_2nCovGNf7QQeyGoyX3hFZc8K5LCPth9QDIS68ntu7kS54ztrc886H9StwTuFXf94VsH30qaKic9MNL5Vdf0e_psxxkZeaU_k2-)
+12. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGIdkbQdS8VU-q4qUqu5DOoNd7Al0UN9T1-CG2vD3vfM_Ex0J4VY7qBudkzDIePhDxHXSlO5yFhGGWXUmmZJZ0hLsLWqY93aYy12SyyxX1lHtGG9gfe0jsk3nj5sl0YBE3RJP452tdFEmPnthS3qSOMpTeoUhE77JHnstFxm7VvdYA8EP4=)
+13. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFwzHfz5i_ze1Gddvj44-uottGfOWaSJBLsp05NbxIazVAYp8yiy9mlUFi3j_wwMoVR4Lt1vdxLugpnjdaxhyWc1vNhS3LenI_H3-ZHEI-1k-FfnOz7CHIOk5DA9h_0O1i1LQSKM3txgl4SRDQFlp8eHPfQRbAkrIXT5KVH2BIUOFTB0wA=)
+14. [mrmiles.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGctIbA7F3OF1V0tIGr7RIvLbORbIsJ65ymP5Yn8rMNvy-YHSIbtpMLQYJEtRKBDBBilpNTAKsXmUdfMqb5ISXL2hWDt6oku1XqfIe6nhRf4xT-w90Oi_DtoCMAj-t08BBh)
+15. [flyformiles.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFbGWJCNWc7nj_KrNCImSQNkU_2JJKoxra_L49x-qwzpyjgqNpIoNbKa4QD_QZyoSyYbcWdGdwuz_4lM2FFR9La1bdDfPBNf3FLASh8gLEAT3-1NkMbOhJyxsI8O-fmJpeK2JkDmOEfqF-EU_vcpSj0rOVI_ySE)
+16. [hsbc.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG4WncY_Ck4MSkmfomLvX8UX_FOSueuttyzs0ZuJY9pSdHi0sH_kf5XTxjjTcpvXK1d5ML9vzT4CfXTTzZe5lw375Y7I3bclYzrZH89I7s9COWb5pGpoByv-dFCyw3EBKhgw8LNyMul_G5yTbJ1SVKeL6zxpOPgAx6nPAXzgxLuGnhdOEnitRJQVWnRM1sDEE4b_xUoWo5OCA==)
+17. [agoda.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGN6onGfw3IjVKthdJ9-TEAnvMuLRbYg01UErkJncNw_0Oh0pc6VjCbHHvXv-V4Zv0AQlmXsXNILhOHxfsVW_LbQmZo8ZtQ5LRy14G9XfkVd7aY0iIxK9UW)
+18. [moneyhero.com.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEiPm2xmsF3DEDyBXupw2UowBMYl1dm76DOm9ioBC7aCF3Zz24xqmfVWXWSPEjM4-UjBupOcL4UEhWqeq8aKqW2VIJOXGaeOGaTqINt392MmwFZsc0BGZf9AxG_DfyzTgejkFUcTSyUC9sv7TIB4h0qjFEZyI3k0tm_qElSCffyGqKkEwPcHY6-en33j6w52jrxfAeaL7ojk3O6dQ77)
+19. [flyertalk.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEtpbCTtNT6BxQtqWUw9mqIqYZJPRlyXUSOOXhBDd59cIgfQovIZ107GmZIW6EwWVwYnTrkB1juEWkbYdDPdHpbRj9HtI_KH90PRn7uy9xiUs1YSwVaNlH5FfA6a2siDBgUavfsa2lAvxDMjbaOYtXloBThOjLn3nGAuBCf-e85mo21OA46FloRUMx9C6xSi6ahA3s5wYd-FN7GgRR4L8zdBJM0VYjdvGT1h07YTFKIDmipFh72dLux)
+20. [mrmiles.hk](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG4Xj4ErDewfLKiwIjHrNTWDEy4PftSmWqeWswBVQX2ulSV1b8JEbrKWfO8MWnB3DmhuJacLf0NHx871-BbbhT6PMBQuSZezGQC6vysTH6dFoqmhbvjiag2A_Y=)
