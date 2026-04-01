@@ -114,7 +114,11 @@ def run_refresh_pipeline(
 
     # For GitHub Actions, we skip branch/PR creation (handled by the workflow)
     if trigger_source == "github_actions":
-        # Just write the files, the workflow YAML handles branching
+        # Write the proposed code directly to optimizer.py so the Action can commit it
+        opt_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "optimizer.py")
+        with open(opt_path, "w") as f:
+            f.write(proposed_code)
+            
         _progress("complete", "✅ Files updated. GitHub Actions will create the PR.")
         log_refresh(
             trigger_source=trigger_source,

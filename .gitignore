@@ -41,3 +41,4 @@ engine_deltas/refresh_log.json
 # Deep Research test scripts (keep locally)
 deep_research_test.py
 deep_research_delta_report.md
+engine_deltas/*.py
