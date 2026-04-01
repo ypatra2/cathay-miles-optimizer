@@ -2,159 +2,158 @@
 Git Manager — Handles creating branches and opening GitHub PRs
 for the agentic engine refresh pipeline.
 
-Uses the GitHub REST API to create PRs programmatically.
+Uses PyGithub to execute all operations remotely via the GitHub REST API,
+ensuring zero local file mutations natively inside Streamlit Cloud.
 """
 
 import os
 import subprocess
-import requests
 from datetime import datetime
 from dotenv import load_dotenv
+
+try:
+    from github import Github, GithubException, InputGitTreeElement
+except ImportError:
+    Github = None
+    InputGitTreeElement = None
 
 load_dotenv()
 
 
-def _run_git(args: list, cwd: str = None) -> tuple:
-    """Run a git command and return (stdout, stderr, returncode)."""
-    if cwd is None:
-        cwd = os.path.dirname(os.path.dirname(__file__))
-    result = subprocess.run(
-        ["git"] + args,
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip(), result.stderr.strip(), result.returncode
+def _get_repo_name() -> str:
+    """Gets the repo name dynamically or falls back to hardcoded."""
+    try:
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=project_root,
+            capture_output=True,
+            text=True
+        )
+        remote_url = result.stdout.strip()
+        if "github.com" in remote_url:
+            if remote_url.startswith("git@"):
+                return remote_url.split(":")[-1].replace(".git", "")
+            else:
+                return remote_url.split("github.com/")[-1].replace(".git", "")
+    except Exception:
+        pass
+    
+    # Fallback to the known repo if subprocess fails (e.g., inside Streamlit Cloud container)
+    return "ypatra2/cathay-miles-optimizer"
 
 
 def create_refresh_branch(proposed_code: str, delta_report: str) -> dict:
     """
-    Creates a new git branch with the proposed optimizer.py changes,
-    commits them, and pushes to origin.
+    Creates a new git branch remotely via GitHub API with the proposed optimizer.py
+    changes and the delta report markdown. No local disk writes are performed.
 
     Returns:
         dict with keys: branch_name, success, error
     """
-    project_root = os.path.dirname(os.path.dirname(__file__))
     month_tag = datetime.now().strftime("%Y-%m")
     branch_name = f"engine-refresh/{month_tag}"
-
+    
+    token = os.getenv("GITHUB_TOKEN")
+    if not token:
+        return {
+            "branch_name": branch_name,
+            "success": False,
+            "error": "GITHUB_TOKEN not found in environment. Please add it to your .env or Streamlit Secrets."
+        }
+    if not Github:
+        return {
+            "branch_name": branch_name,
+            "success": False,
+            "error": "PyGithub is not installed. Please add it to requirements.txt."
+        }
+    
+    repo_name = _get_repo_name()
+    g = Github(token)
+    
     try:
-        # Ensure we're on main and up to date
-        _run_git(["checkout", "main"], cwd=project_root)
-        _run_git(["pull", "origin", "main"], cwd=project_root)
+        repo = g.get_repo(repo_name)
+        main_ref = repo.get_git_ref("heads/main")
+        
+        # 1. Create a new branch pointing to main's SHA
+        try:
+            repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=main_ref.object.sha)
+        except GithubException as e:
+            if e.status == 422 and "Reference already exists" in str(e.data):
+                # Branch exists! Append a timestamp string.
+                branch_name = f"engine-refresh/{month_tag}-{int(datetime.now().timestamp())}"
+                repo.create_git_ref(ref=f"refs/heads/{branch_name}", sha=main_ref.object.sha)
+            else:
+                raise
 
-        # Create and checkout new branch
-        stdout, stderr, rc = _run_git(
-            ["checkout", "-b", branch_name], cwd=project_root
+        # 2. Prepare multi-file commit via Git Trees API
+        commit_message = f"feat(engine): agentic refresh {month_tag} via Deep Research Agent"
+        main_commit = repo.get_commit(main_ref.object.sha)
+        
+        # We define the blobs that we want to push
+        element_1 = InputGitTreeElement(
+            path="optimizer.py",
+            mode="100644",
+            type="blob",
+            content=proposed_code
         )
-        if rc != 0 and "already exists" in stderr:
-            # Branch exists, append timestamp
-            branch_name = f"engine-refresh/{month_tag}-{int(datetime.now().timestamp())}"
-            _run_git(["checkout", "-b", branch_name], cwd=project_root)
-
-        # Write the proposed optimizer.py
-        optimizer_path = os.path.join(project_root, "optimizer.py")
-        with open(optimizer_path, "w") as f:
-            f.write(proposed_code)
-
-        # Write the delta report
-        deltas_dir = os.path.join(project_root, "engine_deltas")
-        os.makedirs(deltas_dir, exist_ok=True)
-        report_path = os.path.join(deltas_dir, f"engine_delta_{month_tag}.md")
-        with open(report_path, "w") as f:
-            f.write(delta_report)
-
-        # Stage and commit
-        _run_git(["add", "optimizer.py", "engine_deltas/"], cwd=project_root)
-        _run_git(
-            ["commit", "-m",
-             f"feat(engine): agentic refresh {month_tag} via Deep Research Agent"],
-            cwd=project_root,
+        element_2 = InputGitTreeElement(
+            path=f"engine_deltas/engine_delta_{month_tag}.md",
+            mode="100644",
+            type="blob",
+            content=delta_report
         )
-
-        # Push to origin
-        stdout, stderr, rc = _run_git(
-            ["push", "-u", "origin", branch_name], cwd=project_root
-        )
-        if rc != 0:
-            return {
-                "branch_name": branch_name,
-                "success": False,
-                "error": f"Git push failed: {stderr}",
-            }
+        
+        # 3. Create Tree and Commit
+        base_tree = repo.get_git_tree(main_commit.sha)
+        tree = repo.create_git_tree([element_1, element_2], base_tree=base_tree)
+        parent = repo.get_git_commit(main_commit.sha)
+        
+        new_commit = repo.create_git_commit(commit_message, tree, [parent])
+        
+        # 4. Update Reference to point to new commit
+        branch_ref = repo.get_git_ref(f"heads/{branch_name}")
+        branch_ref.edit(new_commit.sha)
 
         return {
             "branch_name": branch_name,
             "success": True,
-            "error": None,
+            "error": None
         }
 
     except Exception as e:
         return {
             "branch_name": branch_name,
             "success": False,
-            "error": str(e),
+            "error": f"PyGithub API Error: {str(e)}"
         }
-    finally:
-        # Always clean up any dirty state and return to main
-        _run_git(["reset", "--hard", "HEAD"], cwd=project_root)
-        _run_git(["checkout", "main"], cwd=project_root)
 
 
 def create_github_pr(branch_name: str, patch_summary: str) -> dict:
     """
-    Creates a GitHub Pull Request using the GitHub REST API.
-
-    Requires GITHUB_TOKEN in .env or environment.
-    Falls back to returning a manual URL if no token is available.
-
+    Creates a GitHub Pull Request using PyGithub.
+    
     Returns:
-        dict with keys: pr_url, success, error
+        dict with keys: pr_url, success, error, note
     """
-    github_token = os.getenv("GITHUB_TOKEN")
-
-    # Get the repo owner/name from git remote
-    project_root = os.path.dirname(os.path.dirname(__file__))
-    stdout, _, _ = _run_git(["remote", "get-url", "origin"], cwd=project_root)
-    remote_url = stdout.strip()
-
-    # Parse owner/repo from remote URL
-    # Handles both HTTPS and SSH formats
-    if "github.com" in remote_url:
-        if remote_url.startswith("git@"):
-            # git@github.com:owner/repo.git
-            parts = remote_url.split(":")[-1].replace(".git", "")
-        else:
-            # https://github.com/owner/repo.git
-            parts = remote_url.split("github.com/")[-1].replace(".git", "")
-        owner_repo = parts
-    else:
-        return {
-            "pr_url": "",
-            "success": False,
-            "error": f"Cannot parse GitHub remote: {remote_url}",
-        }
-
-    if not github_token:
-        # No token: return a manual compare URL
-        compare_url = f"https://github.com/{owner_repo}/compare/main...{branch_name}?expand=1"
+    token = os.getenv("GITHUB_TOKEN")
+    if not token or not Github:
+        repo_name = _get_repo_name()
+        compare_url = f"https://github.com/{repo_name}/compare/main...{branch_name}?expand=1"
         return {
             "pr_url": compare_url,
             "success": True,
             "error": None,
-            "note": "No GITHUB_TOKEN set. Use the URL to manually create the PR.",
+            "note": "No GITHUB_TOKEN set. Use the URL to manually create the PR."
         }
-
-    # Create PR via GitHub API
-    url = f"https://api.github.com/repos/{owner_repo}/pulls"
-    headers = {
-        "Authorization": f"token {github_token}",
-        "Accept": "application/vnd.github.v3+json",
-    }
-    body = {
-        "title": f"🔬 Engine Refresh — {datetime.now().strftime('%B %Y')}",
-        "body": (
+        
+    repo_name = _get_repo_name()
+    g = Github(token)
+    
+    try:
+        repo = g.get_repo(repo_name)
+        title = f"🔬 Engine Refresh — {datetime.now().strftime('%B %Y')}"
+        body = (
             "## 🤖 Agentic Engine Refresh\n\n"
             "This PR was auto-generated by the **Deep Research + Dev Agent** pipeline.\n\n"
             f"### Changes Summary\n{patch_summary}\n\n"
@@ -162,33 +161,25 @@ def create_github_pr(branch_name: str, patch_summary: str) -> dict:
             "- [ ] Verify earn rate changes against official bank pages\n"
             "- [ ] Check that all function signatures are preserved\n"
             "- [ ] Run the Streamlit app to test recommendations\n"
-        ),
-        "head": branch_name,
-        "base": "main",
-    }
-
-    try:
-        r = requests.post(url, headers=headers, json=body, timeout=15)
-        if r.status_code == 201:
-            pr_data = r.json()
-            return {
-                "pr_url": pr_data["html_url"],
-                "success": True,
-                "error": None,
-            }
-        else:
-            # API PR creation failed, fall back to manual URL
-            compare_url = f"https://github.com/{owner_repo}/compare/main...{branch_name}?expand=1"
-            return {
-                "pr_url": compare_url,
-                "success": True,
-                "error": f"GitHub API returned {r.status_code}: {r.text[:200]}. Use the URL to create PR manually.",
-            }
+        )
+        
+        pr = repo.create_pull(
+            title=title,
+            body=body,
+            head=branch_name,
+            base="main"
+        )
+        
+        return {
+            "pr_url": pr.html_url,
+            "success": True,
+            "error": None
+        }
 
     except Exception as e:
-        compare_url = f"https://github.com/{owner_repo}/compare/main...{branch_name}?expand=1"
+        compare_url = f"https://github.com/{repo_name}/compare/main...{branch_name}?expand=1"
         return {
             "pr_url": compare_url,
             "success": True,
-            "error": f"GitHub API call failed: {str(e)}. Use the URL to create PR manually.",
+            "error": f"GitHub API call failed: {str(e)}. Use the URL to create PR manually."
         }
