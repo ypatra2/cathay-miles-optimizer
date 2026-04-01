@@ -2,7 +2,7 @@ name: Monthly Engine Refresh
 
 on:
   schedule:
-    - cron: '10 8 1 * *'        # TEST TRIGGER: 1st of the month at 08:10 UTC (16:10 / 4:10 PM HKT)
+    - cron: '*/15 * * * *'        # AGGRESSIVE TEST: Runs every 15 minutes to guarantee prompt scheduling
   workflow_dispatch:              # Allow manual trigger from GitHub UI
 
 jobs:
