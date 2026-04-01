@@ -2,7 +2,7 @@ name: Monthly Engine Refresh
 
 on:
   schedule:
-    - cron: '0 1 1 * *'        # 1st of every month at 01:00 UTC
+    - cron: '0 6 1 * *'        # TEST TRIGGER: 1st of the month at 06:00 UTC (14:00 HKT)
   workflow_dispatch:              # Allow manual trigger from GitHub UI
 
 jobs:
@@ -36,6 +36,7 @@ jobs:
         with:
           branch: engine-refresh/${{ github.run_id }}
           title: '🔬 Monthly Engine Refresh — Auto-generated'
+          reviewers: 'ypatra2'          # EXPLICITLY REQUESTS REVIEW FROM YOU (Guarantees Email Notification)
           body: |
             ## 🤖 Agentic Engine Refresh
 
