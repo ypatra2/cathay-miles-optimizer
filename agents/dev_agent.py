@@ -45,12 +45,15 @@ def run_dev_agent(state: dict) -> dict:
     """
     import requests
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+    api_key_raw = os.getenv("GEMINI_API_KEY")
+    if not api_key_raw:
         return {
             "patch_status": "failed",
             "error": "GEMINI_API_KEY not found in environment"
         }
+    
+    # Strip quotes and spaces (common mistake when copy-pasting from TOML to GitHub Secrets)
+    api_key = api_key_raw.strip(' \n\r"\'')
 
     research_report = state.get("research_report", "")
     engine_code = state.get("current_engine_code", "")

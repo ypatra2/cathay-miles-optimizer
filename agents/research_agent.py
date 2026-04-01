@@ -116,12 +116,15 @@ def run_deep_research(state: dict) -> dict:
     LangGraph node: Launches a Deep Research task and polls for results.
     Returns updated state with the research report.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+    api_key_raw = os.getenv("GEMINI_API_KEY")
+    if not api_key_raw:
         return {
             "research_status": "failed",
             "error": "GEMINI_API_KEY not found in environment"
         }
+    
+    # Strip quotes and spaces (common mistake when copy-pasting from TOML to GitHub Secrets)
+    api_key = api_key_raw.strip(' \n\r"\'')
 
     headers = {
         "Content-Type": "application/json",
