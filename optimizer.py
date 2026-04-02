@@ -35,6 +35,8 @@ CATEGORIES = [
     "Overseas (Online)",                    # DELTA: New category for HSBC Travel Guru differentiation (cite: 9, 10)
     "Rent Payments (RentSmart)",            # DELTA: New category for SC Cathay promo (cite: 8)
     "Hotel Bookings",                       # DELTA: New category for SC Cathay explicit rate (cite: 5, 6)
+    "Education / Hospital (Physical)",      # DELTA: New category from delta report (cite: Section 3)
+    "Education / Hospital (Online)",        # DELTA: New category from delta report (cite: Section 3)
 ]
 
 
@@ -52,10 +54,10 @@ def calculate_miles(card, category, amount):
     # STANDARD CHARTERED CATHAY MASTERCARD
     # ══════════════════════════════════════════════════
     if card == "Standard Chartered Cathay Mastercard":
-        # DELTA: E-wallets, Insurance, and Tax earn ZERO (cite: 5, 6, 11) - Existing, confirmed
-        if category in ["E-Wallets (PayMe/Alipay/WeChat)", "Insurance / Utilities / Tax"]:
+        # DELTA: E-wallets, Insurance, Tax, and Online Education/Hospital earn ZERO (cite: 5, 6, 11, 19, 20)
+        if category in ["E-Wallets (PayMe/Alipay/WeChat)", "Insurance / Utilities / Tax", "Education / Hospital (Online)"]: # DELTA: Added Education / Hospital (Online) to exclusions (cite: 11)
             rate = 0.0
-            notes = "Excluded: Strictly excluded from earning Asia Miles by Standard Chartered terms."
+            notes = "Excluded: Strictly excluded from earning Asia Miles by standard banking terms." # DELTA: Updated note (cite: 11)
             miles = 0.0
         elif category in ["Cathay Pacific Flights", "HK Express Flights"]:
             rate = 2.0
@@ -63,12 +65,9 @@ def calculate_miles(card, category, amount):
         elif category == "Cathay Partner Dining":
             rate = 2.0  # HK$4 = 2 miles → effective HK$2 per mile
             notes = "Cathay Partner exclusive: HK$4=2 miles. Check dining.cathaypacific.com."
-        elif category in ["Dining (Premium)", "Dining (Casual)"]:
-            rate = 4.0
-            notes = "Dining rate: HK$4=1 mile."
         elif category == "Other Airlines (Direct Booking)":
             rate = 4.0
-            notes = "Direct airline booking (MCC 3000-3350) = overseas rate HK$4=1mi."
+            notes = "Direct airline booking (MCC 3000-3350) = overseas rate HK$4=1mi. + Promo Thresholds (unverified)." # DELTA: Added note about promo thresholds (cite: 11)
         # DELTA: Online General, Food Delivery, OTA, Ride-Hailing now HK$4=1mi (cite: 1, 10, MCC intelligence) - Existing, confirmed
         elif category in ["Online General", "Food Delivery", "Travel Booking (Non-Designated OTA)", "Travel Booking (Designated OTA)", "Ride-Hailing (Uber/Taxi Apps)"]:
             rate = 4.0
@@ -85,7 +84,7 @@ def calculate_miles(card, category, amount):
         # DELTA: New category: Rent Payments (RentSmart) (cite: 8)
         elif category == "Rent Payments (RentSmart)":
             rate = 6.0
-            notes = "Rent Payments via RentSmart earn HK$6=1 mile (promo until Apr 30, 2026)."
+            notes = "Rent Payments via RentSmart earn HK$6=1 mile (promo until Apr 30, 2026). 1.5% fee waived up to HK$150k." # DELTA: Updated note with fee waiver details (cite: 7, 9)
         elif category == "Octopus AAVS":
             rate = 6.0
             notes = "Automatic monthly conversion. Passive earning, zero effort."
@@ -93,6 +92,9 @@ def calculate_miles(card, category, amount):
         elif category == "Supermarkets":
             rate = 6.0
             notes = "Supermarkets earn the base local rate of HK$6=1 mile."
+        elif category == "Education / Hospital (Physical)": # DELTA: New category, base rate (cite: 12, 13)
+            rate = 6.0
+            notes = "Physical swiping at hospitals/schools earns the base local rate of HK$6=1 mile."
         else:
             # Remaining categories like Shopping (In-Store General), EveryMile Designated Everyday
             rate = 6.0
@@ -105,10 +107,10 @@ def calculate_miles(card, category, amount):
     # 1 RC = 20 Miles (best HSBC conversion)
     # ══════════════════════════════════════════════════
     elif card == "HSBC EveryMile VISA":
-        # DELTA: E-wallets are nerfed to zero (cite: 4) - Existing, confirmed
-        if category == "E-Wallets (PayMe/Alipay/WeChat)":
+        # DELTA: E-wallets and Online Education/Hospital are nerfed to zero (cite: 4, 19, 20)
+        if category in ["E-Wallets (PayMe/Alipay/WeChat)", "Education / Hospital (Online)"]: # DELTA: Added Education / Hospital (Online) to exclusions (cite: 19, 20)
             rate = 0.0
-            notes = "Excluded: PayMe and other e-wallets no longer earn RewardCash as of July 2025."
+            notes = "Excluded: PayMe and other e-wallets / online bill payments no longer earn RewardCash as of July 2025." # DELTA: Updated note (cite: 4, 19, 20)
             miles = 0.0
         # DELTA: Supermarkets are severely penalized (cite: 2, 3) - Existing, confirmed
         elif category == "Supermarkets":
@@ -118,32 +120,36 @@ def calculate_miles(card, category, amount):
         elif category == "Insurance / Utilities / Tax":
             rate = 12.5
             notes = "Online bill payments earn only 0.4% base rate (HK$12.5=1mi)."
+        elif category == "Education / Hospital (Physical)": # DELTA: New category, base rate (cite: 12, 13)
+            rate = 5.0
+            notes = "Physical swiping at hospitals/schools earns the base local rate of HK$5=1 mile."
         # FIX: Klook/KKday explicitly confirmed as designated merchants in 2025_03 terms
+        # DELTA: Update Travel Booking logic to highlight Agoda synergy (cite: 10)
         elif category in ["Travel Booking (Designated OTA)", "EveryMile Designated Everyday"]:
             rate = 2.0
-            notes = "EveryMile designated merchant (including Klook/KKday): HK$2=1 mile."
+            notes = "EveryMile designated merchant (including Klook/KKday/Agoda): HK$2=1 mile. Agoda offers 15% off + 30% flash sales + HK$1.25 RC offset." # DELTA: Updated note for Agoda synergy (cite: 10)
         # DELTA: Overseas (Physical) with complex cap logic (cite: 3)
         elif category == "Overseas (Physical)":
-            # DELTA: Overseas promo with HK$12K threshold and HK$15K cap (cite: 3)
-            if amount >= 12000:
+            # DELTA: Overseas promo with HK$12K threshold and HK$15K cap (cite: 1)
+            if amount >= 12000: # DELTA: Overseas promo requires HK$12K minimum threshold (cite: 1)
                 if amount <= 15000:
                     rate = 2.0
-                    notes = "Overseas (Physical) promo: HK$2=1mi (up to HK$15K spend)."
+                    notes = "Overseas (Physical) promo: HK$2=1mi (Threshold of HK$12K met, up to HK$15K spend)." # DELTA: Updated note for threshold (cite: 1)
                 else:
                     base_miles = 15000 / 2.0
                     excess_miles = (amount - 15000) / 5.0 # Excess earns base 1% RC (HK$5=1mi)
                     miles = base_miles + excess_miles
                     rate = amount / miles # Blended effective rate
-                    notes = f"WARNING: Overseas (Physical) promo cap (HK$15K) exceeded. First HK$15K earns HK$2=1mi, excess HK${amount-15000:.2f} earns base HK$5=1mi. (Blended rate: HK${rate:.2f}=1mi)."
+                    notes = f"WARNING: Overseas (Physical) promo cap (HK$15K) exceeded. First HK$15K earns HK$2=1mi, excess HK${amount-15000:.2f} earns base HK$5=1mi. (Blended rate: HK${rate:.2f}=1mi)." # DELTA: Updated note for threshold (cite: 1)
             else:
                 rate = 5.0
-                notes = "Overseas (Physical) fails to meet HK$12K promo threshold, earns base HK$5=1mi."
+                notes = "Overseas (Physical) fails to meet the HK$12K Phase Promo threshold. Earns base HK$5=1mi." # DELTA: Updated note for threshold (cite: 1)
             # DELTA: Add note about potential Travel Guru stacking (cite: 9, 21, 23)
-            notes += " *HSBC Travel Guru (Tier 3) could yield HK$0.59=1mi for physical overseas spend.*"
+            notes += " *HSBC Travel Guru (Tier 3) could yield up to +6% RC for physical overseas spend.*" # DELTA: Added Travel Guru note (cite: 2, 3)
         # DELTA: Overseas (Online) earns base rate (cite: 9, 10)
         elif category == "Overseas (Online)":
             rate = 5.0
-            notes = "Overseas (Online) earns base HK$5=1 mile (excluded from Travel Guru)."
+            notes = "Overseas (Online) earns base HK$5=1 mile (excluded from Travel Guru)." # DELTA: Clarified Travel Guru exclusion (cite: 9, 10)
         elif category == "Overseas": # Keep for backward compatibility, assume base rate
             rate = 5.0
             notes = "Overseas (general) earns base HK$5=1 mile."
@@ -166,16 +172,19 @@ def calculate_miles(card, category, amount):
     # 1 RC = 10 Miles
     # ══════════════════════════════════════════════════
     elif card == "HSBC Red Mastercard":
-        # DELTA: E-wallets nerfed to zero (cite: 4) - Existing, confirmed
-        if category == "E-Wallets (PayMe/Alipay/WeChat)":
+        # DELTA: E-wallets and Online Education/Hospital nerfed to zero (cite: 4, 19, 20)
+        if category in ["E-Wallets (PayMe/Alipay/WeChat)", "Education / Hospital (Online)"]: # DELTA: Added Education / Hospital (Online) to exclusions (cite: 19, 20)
             rate = 0.0
             miles = 0.0
-            notes = "Excluded: PayMe and other e-wallets no longer earn RewardCash as of July 2025."
+            notes = "Excluded: PayMe and other e-wallets / online bill payments no longer earn RewardCash as of July 2025." # DELTA: Updated note (cite: 4, 19, 20)
         # DELTA: Supermarkets, Insurance/Utilities/Tax earn 0.4% RC (cite: 13, 14, 18) - Existing, confirmed
         elif category in ["Supermarkets", "Insurance / Utilities / Tax"]:
             rate = 25.0
             miles = amount / rate
             notes = "Earns 0.4% base rate (HK$25=1mi)."
+        elif category == "Education / Hospital (Physical)": # DELTA: New category, base rate (cite: 12, 13)
+            rate = 25.0
+            notes = "Physical swiping at hospitals/schools earns the base 0.4% rate (HK$25=1mi)."
         elif category == "Shopping (Designated 8%)":
             # DELTA: Implement HK$1,250 monthly cap for 8% rebate (cite: 7, 19) - Existing, confirmed
             if amount <= 1250:
@@ -196,20 +205,22 @@ def calculate_miles(card, category, amount):
                 rate = 2.5
                 miles = amount / rate
                 notes = "4% online rebate applied (HK$2.5=1mi)."
-                if category == "Ride-Hailing (Uber/Taxi Apps)":
-                    notes += " +20mi/ride via Cathay partnership!"
             else:
                 base_miles = 10000 / 2.5
                 excess_miles = (amount - 10000) / 25.0
                 miles = base_miles + excess_miles
                 rate = amount / miles
                 notes = f"WARNING: 4% cap (HK$10K) exceeded. First HK$10,000 earns HK$2.5=1mi, excess HK${amount-10000:.2f} earns base 0.4% (HK$25=1mi)."
-                if category == "Ride-Hailing (Uber/Taxi Apps)":
-                    notes += " +20mi/ride via Cathay partnership!"
+            
+            # DELTA: Specific MCC Warning for Ride-Hailing and Food Delivery (cite: 4, 5, 6, 15)
+            if category == "Ride-Hailing (Uber/Taxi Apps)":
+                notes += " WARNING: Uber routes through the Netherlands; expect a 1.95% Cross-Border Fee (CBF)." # DELTA: Added CBF warning for Uber (cite: 5, 15)
+            if category == "Food Delivery":
+                notes += " (Verified MCC 5814/5499: Triggers Online 4%, but strictly excluded from standard Dining promos)." # DELTA: Added MCC note for Food Delivery (cite: 4, 6)
         # DELTA: Overseas (Physical/Online) earns base rate (cite: 17, 18)
         elif category in ["Overseas", "Overseas (Physical)", "Overseas (Online)"]: # Keep "Overseas" for backward compatibility
             rate = 25.0
-            notes = "Overseas spending earns base 0.4% (HK$25=1mi)."
+            notes = "Overseas spending earns base 0.4% (HK$25=1mi)." # DELTA: Confirmed base rate for overseas (cite: 17, 18)
         else:
             # Base 0.4% for everything else (dining, in-store, Octopus, flights)
             rate = 25.0
@@ -221,27 +232,30 @@ def calculate_miles(card, category, amount):
     # 1 RC = 10 Miles. Assumes Red Hot Rewards category = DINING
     # ══════════════════════════════════════════════════
     elif card == "HSBC VISA Signature":
-        # DELTA: E-wallets nerfed to zero (cite: 4) - Existing, confirmed
-        if category == "E-Wallets (PayMe/Alipay/WeChat)":
+        # DELTA: E-wallets and Online Education/Hospital nerfed to zero (cite: 4, 19, 20)
+        if category in ["E-Wallets (PayMe/Alipay/WeChat)", "Education / Hospital (Online)"]: # DELTA: Added Education / Hospital (Online) to exclusions (cite: 19, 20)
             rate = 0.0
             miles = 0.0
-            notes = "Excluded: PayMe and other e-wallets no longer earn RewardCash as of July 2025."
+            notes = "Excluded: PayMe and other e-wallets / online bill payments no longer earn RewardCash as of July 2025." # DELTA: Updated note (cite: 4, 19, 20)
         # DELTA: Supermarkets, Insurance/Utilities/Tax earn 0.4% RC (cite: 13, 14, 18) - Existing, confirmed
         elif category in ["Supermarkets", "Insurance / Utilities / Tax"]:
             rate = 25.0
             miles = amount / rate
             notes = "Non-bonus/bill payment earns 0.4% base rate (HK$25=1mi)."
+        elif category == "Education / Hospital (Physical)": # DELTA: New category, base rate (cite: 12, 13)
+            rate = 25.0
+            notes = "Physical swiping at hospitals/schools earns the base 0.4% rate (HK$25=1mi)."
         elif category in ["Dining (Premium)", "Dining (Casual)", "Cathay Partner Dining"]:
             # DELTA: Add note about annual HK$100,000 shared cap for Red Hot Rewards (cite: 1, 4)
             rate = 2.78
             miles = amount / rate
-            notes = "3.6% Red Hot Rewards (Dining). *Assumes user has not exceeded HK$100K annual shared category cap.* B1G1 at Michelin restaurants."
+            notes = "3.6% Red Hot Rewards (Dining). *Assumes user has selected Dining as a 5X category and has not exceeded HK$100K annual shared category cap.* B1G1 at Michelin restaurants." # DELTA: Updated note for RHR cap (cite: 19, 23)
         # DELTA: Overseas (Physical/Online) can be a 1.6% Red Hot Rewards category (cite: 1, 4)
         elif category in ["Overseas", "Overseas (Physical)", "Overseas (Online)"]: # Keep "Overseas" for backward compatibility
             rate = 6.25 # 1.6% RC = HK$6.25=1mi
-            notes = "Overseas spending earns 1.6% Red Hot Rewards (HK$6.25=1mi). *Assumes user has not exceeded HK$100K annual shared category cap.*"
+            notes = "Overseas spending earns 1.6% Red Hot Rewards (HK$6.25=1mi) IF selected as your 5X category. *Assumes user has not exceeded HK$100K annual shared category cap.*" # DELTA: Updated note for RHR cap and category selection (cite: 19, 23)
             # DELTA: Add note about potential Travel Guru stacking (cite: 9, 21)
-            notes += " *HSBC Travel Guru (Tier 3) could yield higher RC for physical overseas spend.*"
+            notes += " *Stacking with Travel Guru GURU tier adds up to 6% RC for physical overseas spend.*" # DELTA: Added Travel Guru note (cite: 2, 3)
         elif category == "Octopus AAVS":
             # AAVS is special low-earn on VISA Sig: base 0.4% = HK$25 per mile
             rate = 25.0
@@ -250,7 +264,7 @@ def calculate_miles(card, category, amount):
         else:
             # 1.6% RC → 1.6 RC per $100 → 16 miles per $100 → HK$6.25 = 1 mile
             rate = 6.25
-            notes = "1.6% base for non-dining categories. *Assumes user has not exceeded HK$100K annual shared category cap.*"
+            notes = "1.6% base for non-dining categories. *Assumes user has not exceeded HK$100K annual shared category cap.*" # DELTA: Updated note for RHR cap (cite: 19, 23)
             miles = amount / rate
 
     return math.floor(miles), round(rate, 2), notes
@@ -271,4 +285,4 @@ def get_recommendations(category, amount):
     # Sort by miles descending (most miles first)
     results.sort(key=lambda x: x['miles'], reverse=True)
     return results
-# PATCH_SUMMARY: {"changes": ["Added 'Overseas (Physical)', 'Overseas (Online)', 'Rent Payments (RentSmart)', 'Hotel Bookings' to CATEGORIES list", "Standard Chartered Cathay Mastercard: Added handling for 'Hotel Bookings' (HK$4=1mi)", "Standard Chartered Cathay Mastercard: Added handling for 'Overseas (Physical)' and 'Overseas (Online)' (HK$4=1mi)", "Standard Chartered Cathay Mastercard: Added handling for 'Rent Payments (RentSmart)' (HK$6=1mi)", "HSBC EveryMile VISA: Changed 'Travel Booking (Designated OTA)' rate from HK$2 to HK$5 (base rate)", "HSBC EveryMile VISA: Implemented complex cap logic for 'Overseas (Physical)' (HK$12k threshold, HK$15k cap for HK$2=1mi, then HK$5=1mi)", "HSBC EveryMile VISA: Added handling for 'Overseas (Online)' (HK$5=1mi)", "HSBC EveryMile VISA: Added notes about Travel Guru program for 'Overseas (Physical)'", "HSBC Red Mastercard: Added handling for 'Overseas (Physical)' and 'Overseas (Online)' (HK$25=1mi)", "HSBC VISA Signature: Updated notes for 'Dining' categories to mention shared HK$100K annual cap", "HSBC VISA Signature: Added handling for 'Overseas (Physical)' and 'Overseas (Online)' (HK$6.25=1mi) with cap note", "HSBC VISA Signature: Added notes about Travel Guru program for 'Overseas (Physical)'", "HSBC VISA Signature: Updated notes for general 'else' category to mention shared HK$100K annual cap"], "categories_added": ["Overseas (Physical)", "Overseas (Online)", "Rent Payments (RentSmart)", "Hotel Bookings"], "rates_changed": 8}
+# PATCH_SUMMARY: {"changes": ["Added 'Education / Hospital (Physical)' and 'Education / Hospital (Online)' to CATEGORIES list", "Standard Chartered Cathay Mastercard: Added 'Education / Hospital (Online)' to zero-earn exclusions", "Standard Chartered Cathay Mastercard: Added handling for 'Education / Hospital (Physical)' (HK$6=1mi)", "Standard Chartered Cathay Mastercard: Updated notes for 'Other Airlines (Direct Booking)' to mention promo thresholds", "Standard Chartered Cathay Mastercard: Updated notes for 'Rent Payments (RentSmart)' to include fee waiver details", "HSBC EveryMile VISA: Added 'Education / Hospital (Online)' to zero-earn exclusions", "HSBC EveryMile VISA: Added handling for 'Education / Hospital (Physical)' (HK$5=1mi)", "HSBC EveryMile VISA: Updated notes for 'Travel Booking (Designated OTA)' to include Agoda synergy details", "HSBC EveryMile VISA: Implemented HK$12,000 threshold logic for 'Overseas (Physical)' promo and updated notes", "HSBC EveryMile VISA: Updated notes for 'Overseas (Physical)' and 'Overseas (Online)' to mention Travel Guru program", "HSBC Red Mastercard: Added 'Education / Hospital (Online)' to zero-earn exclusions", "HSBC Red Mastercard: Added handling for 'Education / Hospital (Physical)' (HK$25=1mi)", "HSBC Red Mastercard: Added CBF warning to 'Ride-Hailing (Uber/Taxi Apps)' notes", "HSBC Red Mastercard: Added MCC clarification to 'Food Delivery' notes", "HSBC VISA Signature: Added 'Education / Hospital (Online)' to zero-earn exclusions", "HSBC VISA Signature: Added handling for 'Education / Hospital (Physical)' (HK$25=1mi)", "HSBC VISA Signature: Updated notes for 'Dining' categories to mention RHR cap and category selection", "HSBC VISA Signature: Updated notes for 'Overseas' categories to mention RHR cap, category selection, and Travel Guru stacking", "HSBC VISA Signature: Updated notes for general 'else' category to mention RHR cap"], "categories_added": ["Education / Hospital (Physical)", "Education / Hospital (Online)"], "rates_changed": 4}
