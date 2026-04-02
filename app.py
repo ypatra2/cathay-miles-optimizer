@@ -240,7 +240,7 @@ def render_optimizer():
     left_col, right_col = st.columns([1, 1], gap="large")
 
     with left_col:
-        st.subheader("1. AI Transaction Parsing")
+        st.subheader("✨ AI Transaction Parsing")
         uploaded_files = st.file_uploader(
             "Upload receipts, checkout screens, or bills (multiple allowed)...",
             type=["png", "jpg", "jpeg"],
@@ -314,7 +314,7 @@ def render_optimizer():
             st.metric("Mapped Category", st.session_state.extracted_category)
 
     with right_col:
-        st.subheader("2. Final Transaction Details")
+        st.subheader("💳 Final Transaction Details")
         with st.form(key="transaction_form"):
             cat_search = st.session_state.extracted_category
             cat_idx = CATEGORIES.index(cat_search) if cat_search in CATEGORIES else 0
