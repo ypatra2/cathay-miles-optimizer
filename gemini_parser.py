@@ -20,26 +20,7 @@ def _get_api_key():
         pass
     return os.getenv("GEMINI_API_KEY")
 
-# The mapped categories that exist in our rules engine (v3.2)
-VALID_CATEGORIES = [
-    "Cathay Pacific Flights",
-    "HK Express Flights",
-    "Other Airlines (Direct Booking)",
-    "Other Airlines (via OTA)",
-    "Travel Booking (Designated OTA)",
-    "Travel Booking (Non-Designated OTA)",
-    "EveryMile Designated Everyday",
-    "Ride-Hailing (Uber/Taxi Apps)",
-    "Cathay Partner Dining",
-    "Dining (Premium)",
-    "Dining (Casual)",
-    "Food Delivery",
-    "Shopping (Designated 8%)",
-    "Online General",
-    "Shopping (In-Store General)",
-    "Octopus AAVS",
-    "Overseas"
-]
+from optimizer import CATEGORIES as VALID_CATEGORIES
 
 
 def _image_to_base64(image) -> str:
@@ -119,8 +100,10 @@ def parse_transaction(images: List, user_context: str = "") -> Dict[str, Any]:
     FOOD DELIVERY:
     - Keeta, Foodpanda, Deliveroo → "Food Delivery" (NOT dining — MCC 5814)
 
-    SHOPPING:
-    - GU, Decathlon, lululemon, Sushiro, TamJai SamGor, TamJai Yunnan, The Coffee Academics, NAMCO, TAITO STATION → "Shopping (Designated 8%)"
+    SHOPPING / ELECTRONICS:
+    - Apple Store offline or physical purchases → "Apple Store (In-Store)"
+    - Apple Store online or in-app purchases → "Online General"
+    - GU, Decathlon, lululemon, Sushiro, TamJai, The Coffee Academics → "Shopping (Designated 8%)"
     - Amazon, Taobao, HKTVmall, Zalora, ASOS, Shopee, Lazada, AEON online → "Online General"
     - Uniqlo, M&S, or any in-store retail not listed above → "Shopping (In-Store General)"
 
