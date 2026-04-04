@@ -204,6 +204,13 @@ To execute these findings, the Python engine requires strict conditional logic u
     ```
 *   `if category == 'Overseas (Physical)' and guru_level == 3 → extra_rc = 0.06` (Yields massive returns when combined with Red Hot Rewards).
 
+**For Apple Store (In-Store) / MCC 5732:**
+*   Add category: `Apple Store (In-Store)`
+*   SC Cathay: Base local rate `rate = 6.0`.
+*   HSBC EveryMile: Base local rate `rate = 5.0`.
+*   HSBC Red: Terrible offline base rate `rate = 25.0`.
+*   HSBC Visa Signature: Base `rate = 10.0` (unless offset by Red Hot Rewards).
+
 ### Conclusion
 
 The adjustments outlined in this Delta Report bridge the gap between static algorithmic assumptions and the highly conditional, cap-sensitive reality of Hong Kong's credit card ecosystem in 2026. By separating physical from online overseas spend, enforcing shared annual caps, and correcting designated merchant lists, the updated Python engine will provide mathematically flawless Asia Miles optimization strategies.
