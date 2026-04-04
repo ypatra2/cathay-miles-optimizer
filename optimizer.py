@@ -255,9 +255,9 @@ def calculate_miles(card, category, amount):
 
     # Generalized High-Value Warnings
     if amount >= 10000 and ("Shopping" in category or category == "Online General"):
-        if card_id == "red" and "In-Store" in category:
+        if "Red" in card and "In-Store" in category:
             notes += " ⚠️ HIGH VALUE CAUTION: Red card yields a terrible 0.4% offline! Try purchasing online for 4% instead, or use EveryMile."
-        elif card_id == "visa_signature" and ("Shopping" in category or "Online" in category):
+        elif "Signature" in card and ("Shopping" in category or "Online" in category):
             notes += " ⚠️ CAUTION: Ensure your HK$100k annual Red Hot Rewards cap isn't exceeded for this large purchase!"
 
     return math.floor(miles), round(rate, 2), notes
