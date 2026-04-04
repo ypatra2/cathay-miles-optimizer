@@ -160,12 +160,33 @@ def parse_transaction(images: List, user_context: str = "") -> Dict[str, Any]:
         raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
         result = json.loads(raw_text)
 
-        # Apply vendor overrides: verified mapping beats AI guess
-        from vendor_overrides import get_vendor_override
-        vendor_name = result.get("vendor", "")
-        override = get_vendor_override(vendor_name)
-        if override:
-            result["category"] = override
+        # Apply Centralized MCC Registry lookup via fuzzy matching
+        from db_manager import get_all_mcc_mappings
+        from rapidfuzz import process, fuzz
+        
+        vendor_name = result.get("vendor", "").strip()
+        if vendor_name:
+            mcc_map = get_all_mcc_mappings()
+            if mcc_map:
+                choices = list(mcc_map.keys())
+                best_match = process.extractOne(vendor_name.lower(), choices, scorer=fuzz.WRatio)
+                
+                if best_match and best_match[1] >= 82:
+                    matched_key = best_match[0]
+                    result["category"] = mcc_map[matched_key]
+                    print(f"[GeminiParser] Fast path lookup: '{vendor_name}' fuzzy matched '{matched_key}' (score {best_match[1]:.1f}) -> {result['category']}")
+                else:
+                    print(f"[GeminiParser] Missing record! '{vendor_name}' scored {best_match[1] if best_match else 0:.1f}. Triggering Agentic Research...")
+                    from agents.mcc_research_agent import research_mcc_for_vendor
+                    research_res = research_mcc_for_vendor(vendor_name)
+                    if not research_res.get("error"):
+                        result["category"] = research_res.get("category")
+            else:
+                # DB is entirely empty, seed via research
+                from agents.mcc_research_agent import research_mcc_for_vendor
+                research_res = research_mcc_for_vendor(vendor_name)
+                if not research_res.get("error"):
+                    result["category"] = research_res.get("category")
 
         # Validation Fallback
         if result.get("category") not in VALID_CATEGORIES:

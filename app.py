@@ -278,7 +278,7 @@ def render_optimizer():
                     for f in uploaded_files:
                         f.seek(0)
                         images.append(Image.open(f))
-                with st.spinner(f"Analyzing {len(images)} image(s) + context with Gemini..."):
+                with st.spinner(f"Analyzing {len(images)} image(s). Identifying vendor & querying MCC registry (may take ~5 secs for new vendors)..."):
                     extraction = parse_transaction(images, user_context)
 
                 if "error" in extraction:

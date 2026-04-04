@@ -40,6 +40,14 @@ def init_db():
             miles_earned INTEGER NOT NULL
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS mcc_registry (
+            vendor TEXT PRIMARY KEY,
+            mcc TEXT,
+            platform_type TEXT,
+            mapped_category TEXT
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -136,3 +144,61 @@ def delete_all_transactions():
     cursor.execute("DELETE FROM transactions")
     conn.commit()
     conn.close()
+
+# ══════════════════════════════════════════════════════════════
+# MCC REGISTRY (SELF-BUILDING DB)
+# ══════════════════════════════════════════════════════════════
+
+def get_all_mcc_mappings():
+    """Returns a dictionary of all vendor mappings (used for fuzzy matching)."""
+    # 1. Try Supabase
+    client = get_supabase_client()
+    if client:
+        try:
+            response = client.table("mcc_registry").select("*").execute()
+            # return dict: {vendor_lower: matched_category}
+            return {row["vendor"]: row["mapped_category"] for row in response.data}
+        except Exception as e:
+            print(f"Supabase mcc_registry fetch failed, falling back to SQLite: {e}")
+            
+    # 2. Fallback to SQLite
+    conn = sqlite3.connect(DB_NAME)
+    try:
+        df = pd.read_sql_query("SELECT vendor, mapped_category FROM mcc_registry", conn)
+        mapping = dict(zip(df['vendor'], df['mapped_category']))
+    except:
+        mapping = {}
+    conn.close()
+    return mapping
+
+def save_mcc_mapping(vendor_name: str, mcc: str, platform_type: str, category: str):
+    """Saves a newly researched vendor -> MCC -> Category mapping to Supabase/SQLite."""
+    vendor_lower = vendor_name.strip().lower()
+    
+    # 1. Try Supabase
+    client = get_supabase_client()
+    if client:
+        try:
+            data = {
+                "vendor": vendor_lower,
+                "mcc": mcc,
+                "platform_type": platform_type,
+                "mapped_category": category
+            }
+            # upsert handles primary key conflicts gracefully
+            client.table("mcc_registry").upsert(data, on_conflict="vendor").execute()
+            print(f"[Supabase] Saved MCC mapping for {vendor_lower} -> {category}")
+            return
+        except Exception as e:
+            print(f"Supabase mcc_registry save failed, falling back to SQLite: {e}")
+
+    # 2. Fallback to SQLite
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT OR REPLACE INTO mcc_registry (vendor, mcc, platform_type, mapped_category)
+        VALUES (?, ?, ?, ?)
+    ''', (vendor_lower, mcc, platform_type, category))
+    conn.commit()
+    conn.close()
+    print(f"[SQLite] Saved MCC mapping for {vendor_lower} -> {category}")
