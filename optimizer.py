@@ -25,7 +25,6 @@ CATEGORIES = [
     "Shopping (Designated 8%)",             # GU, Decathlon, lululemon, Sushiro, TamJai, etc.
     "Online General",                       # Amazon, Taobao, HKTVmall, Zalora, etc.
     "Shopping (In-Store General)",          # Non-designated retail
-    "Apple Store (In-Store)",               # Specific handling for MCC 5732 electronics
     "Octopus AAVS",
     "Overseas",                             # DELTA: This will be deprecated/split, but kept for existing logic.
     "Supermarkets",
@@ -94,9 +93,6 @@ def calculate_miles(card, category, amount):
         elif category == "Supermarkets":
             rate = 6.0
             notes = "Supermarkets earn the base local rate of HK$6=1 mile."
-        elif category == "Apple Store (In-Store)":
-            rate = 6.0
-            notes = "Local electronics retail falls into 'other local spending': HK$6=1 mile. Solid backup."
         else:
             # Remaining categories like Shopping (In-Store General), EveryMile Designated Everyday
             rate = 6.0
@@ -158,9 +154,6 @@ def calculate_miles(card, category, amount):
             # Special low-earn: 1 RC per HK$250, × 20 miles = HK$12.5 per mile
             rate = 12.5
             notes = "AAVS low-earn: 1RC/HK$250 (×20mi) = HK$12.5/mi. SC Cathay is far better at HK$6/mi."
-        elif category == "Apple Store (In-Store)":
-            rate = 5.0
-            notes = "Best default choice. General local spend earns 1% RC → HK$5=1 mile."
         else:
             # General local, OTA (non-designated), airlines, dining, shopping, food delivery
             rate = 5.0
@@ -217,10 +210,6 @@ def calculate_miles(card, category, amount):
         elif category in ["Overseas", "Overseas (Physical)", "Overseas (Online)"]: # Keep "Overseas" for backward compatibility
             rate = 25.0
             notes = "Overseas spending earns base 0.4% (HK$25=1mi)."
-        elif category == "Apple Store (In-Store)":
-            rate = 25.0
-            notes = "Terrible yield (base 0.4% offline → HK$25=1mi). Save Red Card for ONLINE Apple (4%)."
-            miles = amount / rate
         else:
             # Base 0.4% for everything else (dining, in-store, Octopus, flights)
             rate = 25.0
@@ -258,15 +247,18 @@ def calculate_miles(card, category, amount):
             rate = 25.0
             notes = "AAVS low-earn category: base 0.4% = HK$25/mi. Use SC Cathay instead."
             miles = amount / rate
-        elif category == "Apple Store (In-Store)":
-            rate = 10.0 # Base 1%
-            notes = "Base 1% RC (HK$10=1mi). *If* Apple is in your chosen Red Hot category (e.g. Shopping), yields HK$4.17/mi or HK$2.78/mi!"
-            miles = amount / rate
         else:
             # 1.6% RC → 1.6 RC per $100 → 16 miles per $100 → HK$6.25 = 1 mile
             rate = 6.25
             notes = "1.6% base for non-dining categories. *Assumes user has not exceeded HK$100K annual shared category cap.*"
             miles = amount / rate
+
+    # Generalized High-Value Warnings
+    if amount >= 10000 and ("Shopping" in category or category == "Online General"):
+        if card_id == "red" and "In-Store" in category:
+            notes += " ⚠️ HIGH VALUE CAUTION: Red card yields a terrible 0.4% offline! Try purchasing online for 4% instead, or use EveryMile."
+        elif card_id == "visa_signature" and ("Shopping" in category or "Online" in category):
+            notes += " ⚠️ CAUTION: Ensure your HK$100k annual Red Hot Rewards cap isn't exceeded for this large purchase!"
 
     return math.floor(miles), round(rate, 2), notes
 
