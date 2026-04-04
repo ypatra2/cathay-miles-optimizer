@@ -170,21 +170,35 @@ def parse_transaction(images: List, user_context: str = "") -> Dict[str, Any]:
             if mcc_map:
                 choices = list(mcc_map.keys())
                 best_match = process.extractOne(vendor_name.lower(), choices, scorer=fuzz.WRatio)
-                
                 if best_match and best_match[1] >= 82:
                     matched_key = best_match[0]
-                    result["category"] = mcc_map[matched_key]
-                    print(f"[GeminiParser] Fast path lookup: '{vendor_name}' fuzzy matched '{matched_key}' (score {best_match[1]:.1f}) -> {result['category']}")
+                    registry_data = mcc_map[matched_key]
+                    
+                    # db_manager returns dict: {"category": "...", "platform_type": "..."}
+                    category_from_db = registry_data.get("category", "Shopping (In-Store General)") if isinstance(registry_data, dict) else registry_data
+                    platform_type = registry_data.get("platform_type", "both") if isinstance(registry_data, dict) else "both"
+                    
+                    if platform_type == "both":
+                        llm_cat = result.get("category", "")
+                        if "In-Store" in llm_cat or "Online" in llm_cat:
+                            print(f"[GeminiParser] Hybrid vendor '{matched_key}'. Trusting LLM contextual match: {llm_cat}")
+                            # Do not override result["category"]
+                        else:
+                            result["category"] = category_from_db
+                    else:
+                        result["category"] = category_from_db
+                        
+                    print(f"[GeminiParser] Fast path lookup: '{vendor_name}' fuzzy matched '{matched_key}' -> {result['category']}")
                 else:
                     print(f"[GeminiParser] Missing record! '{vendor_name}' scored {best_match[1] if best_match else 0:.1f}. Triggering Agentic Research...")
                     from agents.mcc_research_agent import research_mcc_for_vendor
-                    research_res = research_mcc_for_vendor(vendor_name)
+                    research_res = research_mcc_for_vendor(vendor_name, user_context)
                     if not research_res.get("error"):
                         result["category"] = research_res.get("category")
             else:
                 # DB is entirely empty, seed via research
                 from agents.mcc_research_agent import research_mcc_for_vendor
-                research_res = research_mcc_for_vendor(vendor_name)
+                research_res = research_mcc_for_vendor(vendor_name, user_context)
                 if not research_res.get("error"):
                     result["category"] = research_res.get("category")
 

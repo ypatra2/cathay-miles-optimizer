@@ -6,7 +6,7 @@ from typing import Dict, Any
 from db_manager import save_mcc_mapping
 from optimizer import CATEGORIES
 
-def research_mcc_for_vendor(vendor_name: str) -> Dict[str, Any]:
+def research_mcc_for_vendor(vendor_name: str, context: str = "") -> Dict[str, Any]:
     """
     Spins up a synchronous Gemini Pro agent to fetch factual MCC codes for a new vendor in Hong Kong 
     and map it to our internal CATEGORIES. It uses raw requests REST API to bypass Python protobuf issues.
@@ -26,8 +26,8 @@ def research_mcc_for_vendor(vendor_name: str) -> Dict[str, Any]:
     
     Instructions:
     1. Determine the predominant MCC associated with the vendor in Hong Kong. (e.g., Mannings is 5912).
-    2. Determine if the vendor predominantly processes as "online" or "offline" in a retail context.
-    3. Choose the absolute best match from the exact CATEGORIES array based on your MCC findings.
+    2. Determine if the vendor predominantly processes as "online" or "offline" in a retail context. If it is a hybrid major retailer (like Apple Store), output "both".
+    3. Choose the absolute best match from the exact CATEGORIES array based on your MCC findings. If platform is "both", heavily weigh the User Context below to decide the specific category (e.g. Shopping (In-Store General) vs Online General).
     4. Provide a brief 1-sentence analytical reason based on factual internet knowledge.
     
     Return EXACTLY valid JSON with no markdown wrapping. Format:
@@ -39,7 +39,7 @@ def research_mcc_for_vendor(vendor_name: str) -> Dict[str, Any]:
     }}
     """
     
-    prompt = f"Find the Hong Kong MCC and credit card category mapping for this specific vendor: {vendor_name}"
+    prompt = f"Vendor: {vendor_name}\\nUser Context describing the purchase: {context}\\nFind the Hong Kong MCC and credit card category mapping for this specific vendor!"
     
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={api_key}"
     

@@ -156,8 +156,8 @@ def get_all_mcc_mappings():
     if client:
         try:
             response = client.table("mcc_registry").select("*").execute()
-            # return dict: {vendor_lower: matched_category}
-            return {row["vendor"]: row["mapped_category"] for row in response.data}
+            # return dict: {vendor_lower: {"category": row["mapped_category"], "platform_type": row["platform_type"]}}
+            return {row["vendor"]: {"category": row["mapped_category"], "platform_type": row.get("platform_type", "both")} for row in response.data}
         except Exception as e:
             print(f"Supabase mcc_registry fetch failed, falling back to SQLite: {e}")
             
